@@ -6,6 +6,8 @@ import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
+import axios from 'axios';
+import { decryptPrivateKeyWithPassword } from '@/Utils/CryptoHelper';
 
 defineProps({
     canResetPassword: {
@@ -24,6 +26,20 @@ const form = useForm({
 
 const submit = () => {
     form.post(route('login'), {
+        onSuccess: async () => {
+            try {
+                const response = await axios.get('/api/user/keys');
+                const {encrypted_private_key, salt, iv} = response.data
+
+                const privateKeyJwk = await decryptPrivateKeyWithPassword({encrypted_private_key, salt, iv}, form.password)
+
+                localStorage.setItem('my_private_key', JSON.stringify(privateKeyJwk));
+
+                console.log('Private key berhasil dipulihkan di device ini!');
+            } catch (error) {
+                console.error('Gagal memulihkan Private Key:', error);
+            }
+        },
         onFinish: () => form.reset('password'),
     });
 };

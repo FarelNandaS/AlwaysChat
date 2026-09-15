@@ -5,18 +5,38 @@ import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
+import { encryptPrivateKeyWithPassword, generateKeyPair } from '@/Utils/CryptoHelper';
 
 const form = useForm({
     name: '',
     email: '',
     password: '',
     password_confirmation: '',
+    public_key: '',
+    encrypted_private_key: '',
+    salt: '',
+    iv: '',
 });
 
-const submit = () => {
-    form.post(route('register'), {
-        onFinish: () => form.reset('password', 'password_confirmation'),
-    });
+const submit = async () => {
+    try {
+        const {publicKeyJwk, privateKeyJwk} = await generateKeyPair();
+
+        const encryptedPayload = await encryptPrivateKeyWithPassword(privateKeyJwk, form.password);
+
+        form.public_key = JSON.stringify(publicKeyJwk);
+        form.encrypted_private_key = encryptedPayload.encrypted_private_key;
+        form.salt = encryptedPayload.salt;
+        form.iv = encryptedPayload.iv;
+
+        localStorage.setItem('my_private_key', JSON.stringify(privateKeyJwk));
+
+        form.post(route('register'), {
+            onFinish: () => form.reset('password', 'password_confirmation'),
+        });
+    } catch (error) {
+        console.error('Gagal memproses kunci kriptografi saat registrasi:', error);
+    }
 };
 </script>
 
