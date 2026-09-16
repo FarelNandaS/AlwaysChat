@@ -1,21 +1,89 @@
 <script setup>
 import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
+import InputError from '@/Components/InputError.vue';
+import InputLabel from '@/Components/InputLabel.vue';
+import Modal from '@/Components/Modal.vue';
+import PrimaryButton from '@/Components/PrimaryButton.vue';
+import SecondaryButton from '@/Components/SecondaryButton.vue';
+import TextInput from '@/Components/TextInput.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, router } from '@inertiajs/vue3';
+import { Head, router, useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
+
+const activeChat = ref(null);
+const isAddModalOpen = ref(false);
+
+const AddForm = useForm({
+    email: ''
+});
 
 // Data dummy untuk testing UI
 const chats = ref([
-    { id: 1, name: 'Budi Santoso', lastMsg: 'P, besok jadi ketemuan?', time: '14:20', online: true },
-    { id: 2, name: 'Siti Aminah', lastMsg: 'Filenya sudah saya kirim ya', time: '12:05', online: false },
-    { id: 3, name: 'Grup Mabar', lastMsg: 'Gass login!', time: 'Yesterday', online: true },
+    { id: 1, email: 'budi@gmail.com', name: 'Budi Santoso', lastMsg: 'P, besok jadi ketemuan?', time: '14:20', online: true },
+    { id: 2, email: 'siti@gmail.com', name: 'Siti Aminah', lastMsg: 'Filenya sudah saya kirim ya', time: '12:05', online: false },
+    { id: 3, email: 'grup@gmail.com', name: 'Grup Mabar', lastMsg: 'Gass login!', time: 'Yesterday', online: true },
 ]);
+
+const openAddModal = () => {
+    isAddModalOpen.value = true;
+}
+
+const closeAddModal = () => {
+    isAddModalOpen.value = false;
+    AddForm.reset();
+    AddForm.clearErrors();
+}
+
+const handleAddChat = () => {
+    if (!AddForm.email.trim()) return;
+
+    const existingChat = chats.value.find(c => c.email.toLowerCase() === AddForm.email.toLowerCase());
+
+    if (existingChat) {
+        selectChat(existingChat);
+        closeAddModal();
+        return;
+    }
+
+    AddForm.post(route('api.check-user'), {
+        preserveScroll: true,
+        onSuccess: (page) => {
+            console.log(page);
+            const user = page.props.flash.user;
+
+            const newChat = {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                lastMsg: 'Chat baru dimulai',
+                time: 'Now',
+                online: false,
+            };
+
+            chats.value.unshift(newChat);
+            selectChat(newChat);
+            closeAddModal();
+        },
+    })
+}
 
 const logout = () => {
     localStorage.removeItem('my_private_key');
 
     router.post(route('logout'));
+}
+
+const selectChat = (chat) => {
+    activeChat.value = chat
+
+    window.history.pushState({}, '', `/dashboard?chat=${chat.id}`)
+}
+
+const outChat = () => {
+    activeChat.value = null
+
+    window.history.pushState({}, '', `/dashboard`);
 }
 </script>
 
@@ -26,15 +94,17 @@ const logout = () => {
     <AuthenticatedLayout>
         <div class="flex h-[100vh] overflow-hidden bg-slate-100">
 
-            <aside class="w-80 md:w-96 bg-white border-r border-slate-200 flex-col hidden md:flex">
+            <aside
+                class="w-full md:w-96 bg-white border-r border-slate-200 flex flex-col transition-all duration-300 ease-in-out"
+                :class="{ 'hidden md:flex': activeChat, 'flex': !activeChat }">
                 <div class="p-4 border-b border-slate-100">
                     <div class="p-2 flex items-center justify-between">
                         <h3 class="font-bold text-2xl">Chats</h3>
                         <div class="flex items-center justify-center">
-                            <button class="hover:text-indigo-600"><svg width="24" height="24"
+                            <button class="hover:text-indigo-600" @click="openAddModal"><svg width="24" height="24"
                                     viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M6 12.0002H18.0007M12.0002 6V18.0007" stroke="currentColor" stroke-width="1.5"
-                                        stroke-linecap="round" stroke-linejoin="round" />
+                                    <path d="M6 12.0002H18.0007M12.0002 6V18.0007" stroke="currentColor"
+                                        stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
                                 </svg>
                             </button>
                             <Dropdown>
@@ -73,7 +143,8 @@ const logout = () => {
 
                 <div class="flex-1 overflow-y-auto">
                     <div v-for="chat in chats" :key="chat.id"
-                        class="flex items-center gap-4 p-4 hover:bg-slate-50 cursor-pointer transition-colors border-b border-slate-50">
+                        class="flex items-center gap-4 p-4 hover:bg-slate-50 cursor-pointer transition-colors border-b border-slate-50"
+                        @click="selectChat(chat)">
                         <div class="relative">
                             <div
                                 class="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center font-bold text-indigo-600">
@@ -93,14 +164,31 @@ const logout = () => {
                 </div>
             </aside>
 
-            <main class="flex-1 flex flex-col bg-white">
+            <main v-if="activeChat"
+                class="flex-1 flex flex-col bg-white w-full h-full absolute md:relative inset-0 md:inset-auto z-20 md:z-auto transition-all duration-300 ease-in-out">
                 <header
                     class="h-16 px-6 border-b border-slate-200 flex items-center justify-between bg-white/80 backdrop-blur-md z-10">
                     <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-full bg-slate-200"></div>
+                        <button class="hover:text-indigo-600" @click="outChat">
+                            <svg width="25" height="25" viewBox="0 0 25 25" fill="none"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path
+                                    d="M3.57813 12.4981C3.5777 12.6905 3.65086 12.8831 3.79761 13.0299L9.7936 19.0301C10.0864 19.3231 10.5613 19.3233 10.8543 19.0305C11.1473 18.7377 11.1474 18.2629 10.8546 17.9699L6.13418 13.2461L20.3295 13.2461C20.7437 13.2461 21.0795 12.9103 21.0795 12.4961C21.0795 12.0819 20.7437 11.7461 20.3295 11.7461L6.14168 11.7461L10.8546 7.03016C11.1474 6.73718 11.1473 6.2623 10.8543 5.9695C10.5613 5.6767 10.0864 5.67685 9.79362 5.96984L3.84392 11.9233C3.68134 12.0609 3.57812 12.2664 3.57812 12.4961L3.57813 12.4981Z"
+                                    fill="currentColor" />
+                            </svg>
+                        </button>
+                        <div class="w-10 h-10 rounded-full bg-slate-200">
+                            <div
+                                class="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center font-bold text-indigo-600">
+                                {{ activeChat.name.charAt(0) }}
+                            </div>
+                        </div>
                         <div>
-                            <h2 class="text-sm font-bold text-slate-900">Budi Santoso</h2>
-                            <p class="text-[10px] text-green-500 font-medium uppercase tracking-wider">Online</p>
+                            <h2 class="text-sm font-bold text-slate-900">{{ activeChat.name }}</h2>
+                            <p v-if="activeChat.online"
+                                class="text-[10px] text-green-500 font-medium uppercase tracking-wider">
+                                Online</p>
+                            <p v-else class="text-[10px] text-gray-500 font-medium uppercase tracking-wider">Offline</p>
                         </div>
                     </div>
                     <div class="flex gap-4 text-slate-400">
@@ -156,6 +244,40 @@ const logout = () => {
                     </div>
                 </footer>
             </main>
+
+            <main v-else class="flex-1 hidden md:flex flex-col items-center justify-center bg-slate-50 text-slate-400">
+                <p>Pilih salah satu chat untuk memulai perpesanan</p>
+            </main>
+
+            <Modal :show="isAddModalOpen" @close="closeAddModal" max-width="md">
+                <div class="p-6">
+                    <h2 class="text-lg font-bold text-slate-900 mb-4">
+                        Mulai Chat Baru
+                    </h2>
+
+                    <form @submit.prevent="handleAddChat">
+                        <div>
+                            <InputLabel for="email" value="Email Pengguna" />
+
+                            <TextInput id="email" type="email" class="mt-1 block w-full" v-model="AddForm.email"
+                                placeholder="contoh: user@gmail.com" required autofocus />
+
+                            <InputError class="mt-2" :message="AddForm.errors.email" />
+                        </div>
+
+                        <div class="mt-6 flex justify-end gap-3">
+                            <SecondaryButton @click="closeAddModal">
+                                Batal
+                            </SecondaryButton>
+
+                            <PrimaryButton :disabled="AddForm.processing">
+                                <span v-if="AddForm.processing">Mencari...</span>
+                                <span v-else>Cari & Chat</span>
+                            </PrimaryButton>
+                        </div>
+                    </form>
+                </div>
+            </Modal>
 
         </div>
     </AuthenticatedLayout>

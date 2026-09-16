@@ -10,8 +10,4 @@ class IndexController extends Controller
     public function dashboard() {
         return Inertia::render('Dashboard');
     }
-
-    public function chat($id) {
-        return Inertia::render('Dashboard');
-    }
 }
