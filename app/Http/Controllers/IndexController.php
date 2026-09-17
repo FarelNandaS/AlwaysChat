@@ -22,6 +22,8 @@ class IndexController extends Controller
                 'id' => $conv->id,
                 'name' => $recipient?->name ?? 'Penguna',
                 'email' => $recipient?->email ?? '',
+                'public_key' => $recipient?->public_key,
+                'iv' => $conv->latestMessage?->iv,
                 'lastMsg' => $conv->latestMessage?->ciphertext ?? 'Belum ada pesan',
                 'time' => $conv->updated_at->diffForHumans(),
                 'online' => false,

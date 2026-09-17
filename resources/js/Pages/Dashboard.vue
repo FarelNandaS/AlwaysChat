@@ -8,7 +8,9 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, router, useForm } from '@inertiajs/vue3';
+import { decryptMessage, encryptMessage } from '@/Utils/CryptoHelper';
+import { Head, router, useForm, usePage } from '@inertiajs/vue3';
+import axios from 'axios';
 import { ref, watch } from 'vue';
 
 const props = defineProps({
@@ -18,19 +20,43 @@ const props = defineProps({
     }
 });
 
-const activeChat = ref(null);
 const isAddModalOpen = ref(false);
 
 const AddForm = useForm({
-    email: ''
+    email: '',
+    chat: '',
+    ciphertext: '',
+    iv: '',
 });
 
-// Data dummy untuk testing UI
+const page = usePage();
+const currentUserId = page.props.auth.user.id;
+
+const activeChat = ref(null);
+const messages = ref([]);
+const isLoadingMessages = ref(false);
+const isFetchingKey = ref(false);
+
 const chats = ref(props.conversations);
 
-watch(() => props.conversations, (newVal) => {
-    chats.value = newVal;
-});
+const decryptConversationsList = async (list) => {
+    return Promise.all(list.map(async (chat) => {
+        if (chat.lastMsg && chat.iv && chat.public_key && chat.lastMsg !== "Belum ada pesan") {
+            try {
+                const plaintext = await decryptMessage(chat.public_key, chat.lastMsg, chat.iv);
+                return { ...chat, lastMsg: plaintext }
+            } catch (error) {
+                console.error('Gagal encrypt pesan:', error);
+                return { ...chat, lastMsg: '[Pesan Terencrypt]' }
+            }
+        }
+        return chat;
+    }))
+}
+
+watch(() => props.conversations, async (newVal) => {
+    chats.value = await decryptConversationsList(newVal);
+}, { immediate: true });
 
 const openAddModal = () => {
     isAddModalOpen.value = true;
@@ -42,8 +68,10 @@ const closeAddModal = () => {
     AddForm.clearErrors();
 }
 
-const handleAddChat = () => {
-    if (!AddForm.email.trim()) return;
+const handleAddChat = async () => {
+    if (!AddForm.email.trim() || !AddForm.chat.trim()) return;
+
+    const rawPlainText = AddForm.chat;
 
     const existingChat = chats.value.find(c => c.email.toLowerCase() === AddForm.email.toLowerCase());
 
@@ -53,13 +81,47 @@ const handleAddChat = () => {
         return;
     }
 
-    AddForm.post(route('api.check-user'), {
+    let recipientPublicKey = existingChat?.public_key;
+
+    if (!recipientPublicKey) {
+        isFetchingKey.value = true;
+
+        try {
+            const response = await axios.get(route('api.user.public-key', { email: AddForm.email }));
+            recipientPublicKey = response.data.public_key;
+        } catch (error) {
+            console.error('Gagal menemukan public key:', error);
+            AddForm.setError('email', 'Pengguna dengan email tersebut tidak ditemukan.');
+            return;
+        } finally {
+            isFetchingKey.value = false;
+        }
+    }
+
+    try {
+        const { ciphertext, iv } = await encryptMessage(recipientPublicKey, rawPlainText);
+        AddForm.ciphertext = ciphertext;
+        AddForm.iv = iv;
+    } catch (error) {
+        console.error("Gagal encrypt:", error);
+        alert('Gagal mengamankan pesan pastikan private key tersimpan di browser.')
+        return;
+    }
+
+    AddForm.post(route('api.add-conversation'), {
         preserveScroll: true,
         onSuccess: (page) => {
             console.log(page);
             const newConv = page.props.flash.conversation;
 
             if (newConv) {
+                newConv.lastMsg = rawPlainText;
+
+                const existingIndex = chats.value.findIndex(c => c.id === newConv.id);
+                if (existingIndex) {
+                    chats.value.splice(existingIndex, 1);
+                }
+
                 chats.value.unshift(newConv);
                 selectChat(newConv);
             }
@@ -75,15 +137,36 @@ const logout = () => {
     router.post(route('logout'));
 }
 
-const selectChat = (chat) => {
+const selectChat = async (chat) => {
     activeChat.value = chat
-
     window.history.pushState({}, '', `/dashboard?chat=${chat.id}`)
+
+    isLoadingMessages.value = true;
+    messages.value = [];
+
+    try {
+        const response = await axios.get(route('api.getMessages', { conversation: chat.id }));
+        const rawMessage = response.data;
+
+        messages.value = await Promise.all(rawMessage.map(async (msg) => {
+            try {
+                const plaintext = await decryptMessage(chat.public_key, msg.ciphertext, msg.iv);
+                return { ...msg, plaintext }
+            } catch (error) {
+                console.error('Gagal mendecrypt pesan:', error);
+                return { ...msg, plaintext: '[Pesan gagal terdecrypt]' }
+            }
+        }))
+    } catch (error) {
+        console.error('Gagal mengambil pesan:', error);
+    } finally {
+        isLoadingMessages.value = false;
+    }
 }
 
 const outChat = () => {
     activeChat.value = null
-
+    messages.value = [];
     window.history.pushState({}, '', `/dashboard`);
 }
 </script>
@@ -208,19 +291,39 @@ const outChat = () => {
                 </header>
 
                 <div class="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/50">
-                    <div class="flex items-end gap-2">
-                        <div class="bg-white border border-slate-200 p-3 rounded-2xl rounded-bl-none shadow-sm">
-                            <p class="text-sm text-slate-700">P, besok jadi ketemuan di cafe biasa?</p>
-                            <span class="text-[9px] text-slate-400 mt-1 block">14:20</span>
-                        </div>
+                    <!-- Loading State -->
+                    <div v-if="isLoadingMessages" class="flex justify-center items-center h-full text-slate-400">
+                        <p class="text-sm">Memuat pesan...</p>
                     </div>
 
-                    <div class="flex items-end justify-end gap-2">
-                        <div class="bg-indigo-600 p-3 rounded-2xl rounded-br-none shadow-md shadow-indigo-100">
-                            <p class="text-sm text-white">Jadi dong! Jam 10 pagi ya.</p>
-                            <span class="text-[9px] text-indigo-200 mt-1 block text-right">14:21</span>
-                        </div>
+                    <!-- Pesan Kosong -->
+                    <div v-else-if="messages.length === 0"
+                        class="flex justify-center items-center h-full text-slate-400">
+                        <p class="text-sm">Belum ada percakapan. Mulai kirim pesan!</p>
                     </div>
+
+                    <!-- Loop Render Pesan Real -->
+                    <template v-else>
+                        <div v-for="msg in messages" :key="msg.id" class="flex items-end gap-2"
+                            :class="{ 'justify-end': msg.sender_id === currentUserId }">
+
+                            <!-- Pesan Masuk (Lawan Bicara) -->
+                            <div v-if="msg.sender_id !== currentUserId"
+                                class="bg-white border border-slate-200 p-3 rounded-2xl rounded-bl-none shadow-sm max-w-md">
+                                <!-- Tampilkan ciphertext (atau plain text jika sudah didekripsi) -->
+                                <p class="text-sm text-slate-700 break-words">{{ msg.plaintext || msg.ciphertext }}</p>
+                                <span class="text-[9px] text-slate-400 mt-1 block">{{ msg.created_at }}</span>
+                            </div>
+
+                            <!-- Pesan Keluar (User Sendiri) -->
+                            <div v-else
+                                class="bg-indigo-600 p-3 rounded-2xl rounded-br-none shadow-md shadow-indigo-100 max-w-md">
+                                <p class="text-sm text-white break-words">{{ msg.plaintext || msg.ciphertext }}</p>
+                                <span class="text-[9px] text-indigo-200 mt-1 block text-right">{{ msg.created_at
+                                    }}</span>
+                            </div>
+                        </div>
+                    </template>
                 </div>
 
                 <footer class="p-4 bg-white border-t border-slate-200">
@@ -258,12 +361,21 @@ const outChat = () => {
 
                     <form @submit.prevent="handleAddChat">
                         <div>
-                            <InputLabel for="email" value="Email Pengguna" />
+                            <InputLabel for="email" value="Email Pengguna*" />
 
                             <TextInput id="email" type="email" class="mt-1 block w-full" v-model="AddForm.email"
-                                placeholder="contoh: user@gmail.com" required autofocus />
+                                placeholder="user@gmail.com" required autofocus />
 
                             <InputError class="mt-2" :message="AddForm.errors.email" />
+                        </div>
+
+                        <div class="mt-2">
+                            <InputLabel for="chat" value="Chat*" />
+
+                            <TextInput id="chat" type="text" class="mt-1 block w-full" v-model="AddForm.chat"
+                                placeholder="Ketik Pesan..." required autofocus />
+
+                            <InputError class="mt-2" :message="AddForm.errors.chat" />
                         </div>
 
                         <div class="mt-6 flex justify-end gap-3">
@@ -272,7 +384,8 @@ const outChat = () => {
                             </SecondaryButton>
 
                             <PrimaryButton :disabled="AddForm.processing">
-                                <span v-if="AddForm.processing">Mencari...</span>
+                                <span v-if="isFetchingKey">Mencari User...</span>
+                                <span v-else-if="AddForm.processing">Memproses...</span>
                                 <span v-else>Cari & Chat</span>
                             </PrimaryButton>
                         </div>

@@ -102,7 +102,7 @@ export async function encryptMessage(recipientPublicKeyJwk, plaintext) {
     const myPrivateKey = await window.crypto.subtle.importKey(
         "jwk",
         myPrivateKeyJwk,
-        { name: "ECDH", namedCurve: "p-256" },
+        { name: "ECDH", namedCurve: "P-256" },
         false,
         ["deriveKey"],
     );

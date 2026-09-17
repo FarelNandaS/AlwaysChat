@@ -26,8 +26,11 @@ Route::middleware('auth')->group(function () {
 
 Route::prefix('api')->middleware(['api', 'throttle:60,1'])->group(function () {
     Route::middleware('auth')->get('/user/keys', [ApiController::class, 'userKeys'])->name('api.user.keys');
+    Route::middleware('auth')->get('/user/public_key', [ApiController::class, 'getPublicKey'])->name('api.user.public-key');
 
-    Route::middleware('auth')->post('/check-user', [ApiController::class, 'checkUser'])->name('api.check-user');
+    Route::middleware('auth')->post('/add-conversation', [ApiController::class, 'addConversation'])->name('api.add-conversation');
+
+    Route::middleware('auth')->get('/conversations/{conversation}/messages', [ApiController::class, 'getMessages'])->name('api.getMessages');
 });
 
 require __DIR__ . '/auth.php';
