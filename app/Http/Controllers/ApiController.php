@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Conversation;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -39,11 +40,25 @@ class ApiController extends Controller
             ]);
         }
 
+        $conversation = Conversation::whereHas('users', function ($q) use ($currentUser) {
+            $q->where('users.id', $currentUser->id);
+        })->whereHas('users', function ($q) use ($targetUser) {
+            $q->where('users.id', $targetUser->id);
+        })->first();
+
+        if (!$conversation) {
+            $conversation = Conversation::create();
+            $conversation->users()->attach([$currentUser->id, $targetUser->id]);
+        }
+
         return back()->with('flash', [
-            'user' => [
-                'id' => $targetUser->id,
+            'conversation' => [
+                'id' => $conversation->id,
                 'name' => $targetUser->name,
                 'email' => $targetUser->email,
+                'lastMsg' => 'Chat baru dimulai',
+                'time' => 'Now',
+                'online' => false,
             ]
         ]);
     }

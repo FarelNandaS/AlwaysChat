@@ -9,7 +9,14 @@ import SecondaryButton from '@/Components/SecondaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, router, useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
+
+const props = defineProps({
+    conversations: {
+        type: Array,
+        default: () => []
+    }
+});
 
 const activeChat = ref(null);
 const isAddModalOpen = ref(false);
@@ -19,11 +26,11 @@ const AddForm = useForm({
 });
 
 // Data dummy untuk testing UI
-const chats = ref([
-    { id: 1, email: 'budi@gmail.com', name: 'Budi Santoso', lastMsg: 'P, besok jadi ketemuan?', time: '14:20', online: true },
-    { id: 2, email: 'siti@gmail.com', name: 'Siti Aminah', lastMsg: 'Filenya sudah saya kirim ya', time: '12:05', online: false },
-    { id: 3, email: 'grup@gmail.com', name: 'Grup Mabar', lastMsg: 'Gass login!', time: 'Yesterday', online: true },
-]);
+const chats = ref(props.conversations);
+
+watch(() => props.conversations, (newVal) => {
+    chats.value = newVal;
+});
 
 const openAddModal = () => {
     isAddModalOpen.value = true;
@@ -50,19 +57,13 @@ const handleAddChat = () => {
         preserveScroll: true,
         onSuccess: (page) => {
             console.log(page);
-            const user = page.props.flash.user;
+            const newConv = page.props.flash.conversation;
 
-            const newChat = {
-                id: user.id,
-                name: user.name,
-                email: user.email,
-                lastMsg: 'Chat baru dimulai',
-                time: 'Now',
-                online: false,
-            };
+            if (newConv) {
+                chats.value.unshift(newConv);
+                selectChat(newConv);
+            }
 
-            chats.value.unshift(newChat);
-            selectChat(newChat);
             closeAddModal();
         },
     })
