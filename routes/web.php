@@ -29,6 +29,7 @@ Route::prefix('api')->middleware(['api', 'throttle:60,1'])->group(function () {
     Route::middleware('auth')->get('/user/public_key', [ApiController::class, 'getPublicKey'])->name('api.user.public-key');
 
     Route::middleware('auth')->post('/add-conversation', [ApiController::class, 'addConversation'])->name('api.add-conversation');
+    Route::middleware('auth')->post('/send-message', [ApiController::class, 'sendMessage'])->name('api.send-message');
 
     Route::middleware('auth')->get('/conversations/{conversation}/messages', [ApiController::class, 'getMessages'])->name('api.getMessages');
 });

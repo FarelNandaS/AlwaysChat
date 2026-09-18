@@ -101,6 +101,36 @@ class ApiController extends Controller
         ]);
     }
 
+    public function sendMessage(Request $request)
+    {
+        $request->validate([
+            'conversation_id' => 'required||integer',
+            'ciphertext' => 'required||string',
+            'iv' => 'required||string',
+        ]);
+
+        $conversation = Conversation::findOrFail($request->conversation_id);
+
+        $message = $conversation->message()->create([
+            'sender_id' => $request->user()->id,
+            'ciphertext' => $request->ciphertext,
+            'iv' => $request->iv
+        ]);
+
+        $conversation->touch();
+
+        return response()->json([
+            'message' => [
+                'id' => $message->id,
+                'conversation_id' => $conversation->id,
+                'sender_id' => $request->user()->id,
+                'ciphertext' => $request->ciphertext,
+                'iv' => $request->iv,
+                'created_at' => $message->created_at->format('H:i'),
+            ]
+        ]);
+    }
+
     public function getMessages(Request $request, Conversation $conversation)
     {
         abort_unless($conversation->users()->where('users.id', $request->user()->id)->exists(), 403);

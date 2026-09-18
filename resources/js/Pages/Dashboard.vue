@@ -37,6 +37,9 @@ const messages = ref([]);
 const isLoadingMessages = ref(false);
 const isFetchingKey = ref(false);
 
+const newMessageText = ref('');
+const isSendingMessage = ref(false);
+
 const chats = ref(props.conversations);
 
 const decryptConversationsList = async (list) => {
@@ -129,6 +132,42 @@ const handleAddChat = async () => {
             closeAddModal();
         },
     })
+}
+
+const sendMessage = async () => {
+    if (!newMessageText.value || !activeChat.value) return;
+
+    const rawPlainText = newMessageText.value;
+    isSendingMessage.value = true;
+
+    try {
+        const { ciphertext, iv } = await encryptMessage(activeChat.value.public_key, rawPlainText);
+
+        const response = await axios.post(route('api.send-message'), {
+            conversation_id: activeChat.value.id,
+            ciphertext: ciphertext,
+            iv: iv,
+        });
+
+        const newMsgData = response.data.message;
+
+        messages.value.push({
+            ...newMsgData,
+            plaintext: rawPlainText,
+        });
+
+        const chatItem = chats.value.find(c => c.id === activeChat.value.id);
+        if (chatItem) {
+            chatItem.lastMsg = rawPlainText;
+        }
+
+        newMessageText.value = '';
+    } catch (error) {
+        console.error('Gagal mengirim pesan:', error);
+        alert('Gagal mengirim pesan.')
+    } finally {
+        isSendingMessage.value = false;
+    }
 }
 
 const logout = () => {
@@ -320,14 +359,14 @@ const outChat = () => {
                                 class="bg-indigo-600 p-3 rounded-2xl rounded-br-none shadow-md shadow-indigo-100 max-w-md">
                                 <p class="text-sm text-white break-words">{{ msg.plaintext || msg.ciphertext }}</p>
                                 <span class="text-[9px] text-indigo-200 mt-1 block text-right">{{ msg.created_at
-                                    }}</span>
+                                }}</span>
                             </div>
                         </div>
                     </template>
                 </div>
 
                 <footer class="p-4 bg-white border-t border-slate-200">
-                    <div
+                    <form @submit.prevent="sendMessage"
                         class="max-w-4xl mx-auto flex items-center gap-3 bg-slate-100 rounded-2xl px-4 py-2 focus-within:ring-2 focus-within:ring-indigo-500 transition-all">
                         <button class="text-slate-400 hover:text-indigo-600 transition-colors">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -336,16 +375,17 @@ const outChat = () => {
                                 </path>
                             </svg>
                         </button>
-                        <input type="text" placeholder="Tulis pesan..."
-                            class="flex-1 bg-transparent border-none focus:ring-0 text-sm text-slate-700" />
-                        <button
-                            class="bg-indigo-600 text-white p-2 rounded-xl hover:bg-indigo-700 transition-all active:scale-95 shadow-sm">
+                        <input v-model="newMessageText" type="text" placeholder="Tulis pesan..."
+                            :disabled="isSendingMessage"
+                            class="flex-1 bg-transparent border-none focus:ring-0 text-sm text-slate-700 disabled:opacity-50" />
+                        <button type="submit" :disabled="isSendingMessage || !newMessageText.trim()"
+                            class="bg-indigo-600 text-white p-2 rounded-xl hover:bg-indigo-700 transition-all active:scale-95 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
                             </svg>
                         </button>
-                    </div>
+                    </form>
                 </footer>
             </main>
 
