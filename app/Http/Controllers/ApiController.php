@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\MessageSent;
 use App\Models\Conversation;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -118,6 +119,8 @@ class ApiController extends Controller
         ]);
 
         $conversation->touch();
+
+        broadcast(new MessageSent($message))->toOthers();
 
         return response()->json([
             'message' => [

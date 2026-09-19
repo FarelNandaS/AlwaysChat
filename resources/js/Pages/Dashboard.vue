@@ -11,7 +11,8 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { decryptMessage, encryptMessage } from '@/Utils/CryptoHelper';
 import { Head, router, useForm, usePage } from '@inertiajs/vue3';
 import axios from 'axios';
-import { ref, watch } from 'vue';
+// import Echo from 'laravel-echo';
+import { nextTick, ref, watch } from 'vue';
 
 const props = defineProps({
     conversations: {
@@ -33,15 +34,26 @@ const page = usePage();
 const currentUserId = page.props.auth.user.id;
 
 const activeChat = ref(null);
+const activeChannel = ref(null);
+const messageContainer = ref(null);
+
 const messages = ref([]);
-const isLoadingMessages = ref(false);
-const isFetchingKey = ref(false);
+const chats = ref([]);
 
 const newMessageText = ref('');
+
+const isLoadingMessages = ref(false);
+const isFetchingKey = ref(false);
 const isSendingMessage = ref(false);
 const isLoadingChat = ref(true);
 
-const chats = ref([]);
+const scrollToBottom = () => {
+    nextTick(() => {
+        if (messageContainer.value) {
+            messageContainer.value.scrollTop = messageContainer.value.scrollHeight;
+        }
+    })
+}
 
 const decryptConversationsList = async (list) => {
     return Promise.all(list.map(async (chat) => {
@@ -170,6 +182,8 @@ const sendMessage = async () => {
             plaintext: rawPlainText,
         });
 
+        scrollToBottom();
+
         const chatItem = chats.value.find(c => c.id === activeChat.value.id);
         if (chatItem) {
             chatItem.lastMsg = rawPlainText;
@@ -191,6 +205,10 @@ const logout = () => {
 }
 
 const selectChat = async (chat) => {
+    if (activeChat.value) {
+        window.Echo.leave(`chat.${activeChat.value.id}`);
+    }
+
     activeChat.value = chat
     window.history.pushState({}, '', `/dashboard?chat=${chat.id}`)
 
@@ -214,10 +232,41 @@ const selectChat = async (chat) => {
         console.error('Gagal mengambil pesan:', error);
     } finally {
         isLoadingMessages.value = false;
+        scrollToBottom();
     }
+
+    activeChannel.value = window.Echo.private(`chat.${chat.id}`).listen('.message.sent', async (e) => {
+        const newMsg = e.message;
+
+        if (newMsg.sender_id !== currentUserId) {
+            try {
+                const plaintext = await decryptMessage(chat.public_key, newMsg.ciphertext, newMsg.iv);
+                messages.value.push({
+                    ...newMsg,
+                    plaintext: plaintext
+                });
+            } catch (error) {
+                messages.value.push({
+                    ...newMsg,
+                    plaintext: "[Gagal deksripsi pesan real-time]"
+                });
+            }
+
+            scrollToBottom();
+
+            const chatItem = chats.value.find(c => c.id === chat.id);
+            if (chatItem) {
+                chatItem.lastMsg = messages.value[messages.value.length - 1].plaintext;
+            }
+        }
+    });
 }
 
 const outChat = () => {
+    if (activeChat.value) {
+        window.Echo.leave(`chat.${activeChat.value.id}`);
+    }
+
     activeChat.value = null
     messages.value = [];
     window.history.pushState({}, '', `/dashboard`);
@@ -347,7 +396,7 @@ const outChat = () => {
                     </div>
                 </header>
 
-                <div class="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/50">
+                <div ref="messageContainer" class="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/50">
                     <!-- Loading State -->
                     <div v-if="isLoadingMessages" class="flex justify-center items-center h-full text-slate-400">
                         <p class="text-sm">Memuat pesan...</p>
@@ -377,7 +426,7 @@ const outChat = () => {
                                 class="bg-indigo-600 p-3 rounded-2xl rounded-br-none shadow-md shadow-indigo-100 max-w-md">
                                 <p class="text-sm text-white break-words">{{ msg.plaintext || msg.ciphertext }}</p>
                                 <span class="text-[9px] text-indigo-200 mt-1 block text-right">{{ msg.created_at
-                                }}</span>
+                                    }}</span>
                             </div>
                         </div>
                     </template>
