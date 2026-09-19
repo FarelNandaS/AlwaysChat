@@ -39,8 +39,9 @@ const isFetchingKey = ref(false);
 
 const newMessageText = ref('');
 const isSendingMessage = ref(false);
+const isLoadingChat = ref(true);
 
-const chats = ref(props.conversations);
+const chats = ref([]);
 
 const decryptConversationsList = async (list) => {
     return Promise.all(list.map(async (chat) => {
@@ -57,8 +58,22 @@ const decryptConversationsList = async (list) => {
     }))
 }
 
+const loadChat = async (conversation) => {
+    const myPrivateKey = localStorage.getItem('my_private_key') ?? null;
+
+    if (!myPrivateKey) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+    }
+
+    chats.value = await decryptConversationsList(conversation);
+
+    isLoadingChat.value = false;
+}
+
 watch(() => props.conversations, async (newVal) => {
-    chats.value = await decryptConversationsList(newVal);
+    if (newVal && newVal.length > 0) {
+        await loadChat(newVal);
+    }
 }, { immediate: true });
 
 const openAddModal = () => {
@@ -114,7 +129,6 @@ const handleAddChat = async () => {
     AddForm.post(route('api.add-conversation'), {
         preserveScroll: true,
         onSuccess: (page) => {
-            console.log(page);
             const newConv = page.props.flash.conversation;
 
             if (newConv) {
@@ -264,7 +278,11 @@ const outChat = () => {
                     </div>
                 </div>
 
-                <div class="flex-1 overflow-y-auto">
+                <div v-if="isLoadingChat" class="p-4 text-center text-slate-400 text-sm">
+                    Memuat...
+                </div>
+
+                <div v-else class="flex-1 overflow-y-auto">
                     <div v-for="chat in chats" :key="chat.id"
                         class="flex items-center gap-4 p-4 hover:bg-slate-50 cursor-pointer transition-colors border-b border-slate-50"
                         @click="selectChat(chat)">
