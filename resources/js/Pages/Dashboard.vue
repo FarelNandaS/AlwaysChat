@@ -12,7 +12,7 @@ import { decryptMessage, encryptMessage } from '@/Utils/CryptoHelper';
 import { Head, router, useForm, usePage } from '@inertiajs/vue3';
 import axios from 'axios';
 // import Echo from 'laravel-echo';
-import { nextTick, ref, watch } from 'vue';
+import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 
 const props = defineProps({
     conversations: {
@@ -55,6 +55,20 @@ const scrollToBottom = () => {
     })
 }
 
+const updateAndReorderSidebar = (conversationId, newPlaintext, timeFormatted) => {
+    const chatIndex = chats.value.findIndex(c => c.id === conversationId);
+    if (chatIndex !== -1) {
+        const targetChat = chats.value[chatIndex];
+        targetChat.lastMsg = newPlaintext;
+        if (timeFormatted) {
+            targetChat.time = timeFormatted;
+        }
+
+        chats.value.splice(chatIndex, 1);
+        chats.value.unshift(targetChat);
+    }
+}
+
 const decryptConversationsList = async (list) => {
     return Promise.all(list.map(async (chat) => {
         if (chat.lastMsg && chat.iv && chat.public_key && chat.lastMsg !== "Belum ada pesan") {
@@ -87,6 +101,39 @@ watch(() => props.conversations, async (newVal) => {
         await loadChat(newVal);
     }
 }, { immediate: true });
+
+onMounted(() => {
+    if (window.Echo && currentUserId) {
+        window.Echo.private(`user.${currentUserId}`).listen('.message.sent', async (e) => {
+            const newMsg = e.message;
+
+            const targetChat = chats.value.find(c => c.id === newMsg.conversation_id);
+            if (targetChat) {
+                try {
+                    const plaintext = await decryptMessage(targetChat.public_key, newMsg.ciphertext, newMsg.iv);
+
+                    updateAndReorderSidebar(newMsg.conversation_id, plaintext, newMsg.created_at);
+
+                    if (activeChat.value && activeChat.value.id === newMsg.conversation_id) {
+                        messages.value.push({
+                            ...newMsg,
+                            plaintext: plaintext
+                        });
+                        scrollToBottom();
+                    }
+                } catch (error) {
+                    console.error('Gagal decrypt pesan incoming global:', error);
+                }
+            }
+        })
+    }
+});
+
+onUnmounted(() => {
+    if (window.Echo && currentUserId) {
+        window.Echo.leave(`user.${currentUserId}`);
+    }
+});
 
 const openAddModal = () => {
     isAddModalOpen.value = true;
@@ -184,10 +231,7 @@ const sendMessage = async () => {
 
         scrollToBottom();
 
-        const chatItem = chats.value.find(c => c.id === activeChat.value.id);
-        if (chatItem) {
-            chatItem.lastMsg = rawPlainText;
-        }
+        updateAndReorderSidebar(activeChat.value.id, rawPlainText, newMsgData.created_at || 'Baru Saja');
 
         newMessageText.value = '';
     } catch (error) {
@@ -253,11 +297,7 @@ const selectChat = async (chat) => {
             }
 
             scrollToBottom();
-
-            const chatItem = chats.value.find(c => c.id === chat.id);
-            if (chatItem) {
-                chatItem.lastMsg = messages.value[messages.value.length - 1].plaintext;
-            }
+            updateAndReorderSidebar(chat.id, message.value[message.value.length - 1].plaintext, newMsg.created_at);
         }
     });
 }

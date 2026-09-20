@@ -6,6 +6,7 @@ use App\Events\MessageSent;
 use App\Models\Conversation;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -120,7 +121,9 @@ class ApiController extends Controller
 
         $conversation->touch();
 
-        broadcast(new MessageSent($message))->toOthers();
+        $receiver = $conversation->users->where('id', '!=', Auth::user()->id)->first();
+
+        broadcast(new MessageSent($message, $receiver->id))->toOthers();
 
         return response()->json([
             'message' => [

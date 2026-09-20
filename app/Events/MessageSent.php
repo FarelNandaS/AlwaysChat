@@ -16,10 +16,12 @@ class MessageSent implements ShouldBroadcastNow
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public $message;
+    public $receiverId;
 
-    public function __construct(Messages $message) 
+    public function __construct(Messages $message, $receiverId) 
     {
         $this->message = $message;
+        $this->receiverId = $receiverId;
     }
 
     /**
@@ -31,6 +33,7 @@ class MessageSent implements ShouldBroadcastNow
     {
         return [
             new PrivateChannel('chat.' . $this->message->conversation_id),
+            new PrivateChannel('user.' . $this->receiverId),
         ];
     }
 

@@ -25,7 +25,7 @@ class IndexController extends Controller
                 'public_key' => $recipient?->public_key,
                 'iv' => $conv->latestMessage?->iv,
                 'lastMsg' => $conv->latestMessage?->ciphertext ?? 'Belum ada pesan',
-                'time' => $conv->updated_at->diffForHumans(),
+                'time' => $conv->updated_at->format('H:i'),
                 'online' => false,
             ];
         });
