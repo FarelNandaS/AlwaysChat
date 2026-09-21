@@ -20,6 +20,7 @@ class IndexController extends Controller
             $recipient = $conv->users->first();
             return [
                 'id' => $conv->id,
+                'recipient_id' => $recipient->id,
                 'name' => $recipient?->name ?? 'Penguna',
                 'email' => $recipient?->email ?? '',
                 'public_key' => $recipient?->public_key,

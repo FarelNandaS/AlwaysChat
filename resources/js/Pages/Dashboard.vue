@@ -39,6 +39,7 @@ const messageContainer = ref(null);
 
 const messages = ref([]);
 const chats = ref([]);
+const onlineUserId = ref([]);
 
 const newMessageText = ref('');
 
@@ -69,6 +70,18 @@ const updateAndReorderSidebar = (conversationId, newPlaintext, timeFormatted) =>
     }
 }
 
+const syncOnlineStatus = () => {
+    chats.value.forEach(chat => {
+        const recipientId = chat.recipient_id;
+        chat.online = onlineUserId.value.includes(recipientId);
+    })
+
+    if (activeChat.value) {
+        const activeRecipientId = activeChat.value.recipient_id;
+        activeChat.value.online = onlineUserId.value.includes(activeRecipientId);
+    }
+}
+
 const decryptConversationsList = async (list) => {
     return Promise.all(list.map(async (chat) => {
         if (chat.lastMsg && chat.iv && chat.public_key && chat.lastMsg !== "Belum ada pesan") {
@@ -96,12 +109,6 @@ const loadChat = async (conversation) => {
     isLoadingChat.value = false;
 }
 
-watch(() => props.conversations, async (newVal) => {
-    if (newVal && newVal.length > 0) {
-        await loadChat(newVal);
-    }
-}, { immediate: true });
-
 onMounted(() => {
     if (window.Echo && currentUserId) {
         window.Echo.private(`user.${currentUserId}`).listen('.message.sent', async (e) => {
@@ -125,15 +132,43 @@ onMounted(() => {
                     console.error('Gagal decrypt pesan incoming global:', error);
                 }
             }
+        });
+
+        window.Echo.join('online').here((users) => {
+            onlineUserId.value = users.map(u => u.id);
+            syncOnlineStatus();
+        }).joining((user) => {
+            if (!onlineUserId.value.includes(user.id)) {
+                onlineUserId.value.push(user.id);
+                syncOnlineStatus();
+            }
+        }).leaving((user) => {
+            onlineUserId.value = onlineUserId.value.filter(id => id !== user.id);
+            syncOnlineStatus();
+        }).error((error) => {
+            console.error('Online channel error:', error);
         })
     }
 });
 
 onUnmounted(() => {
-    if (window.Echo && currentUserId) {
-        window.Echo.leave(`user.${currentUserId}`);
+    if (window.Echo) {
+        if (currentUserId) {
+            window.Echo.leave(`user.${currentUserId}`);
+        }
+        window.Echo.leave('online');
     }
 });
+
+watch(() => props.conversations, async (newVal) => {
+    if (newVal && newVal.length > 0) {
+        await loadChat(newVal);
+    }
+}, { immediate: true });
+
+watch(() => chats.value, () => {
+    syncOnlineStatus();
+}, { deep: true });
 
 const openAddModal = () => {
     isAddModalOpen.value = true;
@@ -466,7 +501,7 @@ const outChat = () => {
                                 class="bg-indigo-600 p-3 rounded-2xl rounded-br-none shadow-md shadow-indigo-100 max-w-md">
                                 <p class="text-sm text-white break-words">{{ msg.plaintext || msg.ciphertext }}</p>
                                 <span class="text-[9px] text-indigo-200 mt-1 block text-right">{{ msg.created_at
-                                    }}</span>
+                                }}</span>
                             </div>
                         </div>
                     </template>

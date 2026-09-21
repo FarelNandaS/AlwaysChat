@@ -92,6 +92,7 @@ class ApiController extends Controller
         return back()->with('flash', [
             'conversation' => [
                 'id' => $conversation->id,
+                'recipient_id' => $targetUser->id,
                 'name' => $targetUser->name,
                 'email' => $targetUser->email,
                 'public_key' => $targetUser->public_key,
