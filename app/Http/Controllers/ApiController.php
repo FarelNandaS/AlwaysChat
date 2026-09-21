@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Events\MessageSent;
 use App\Models\Conversation;
+use App\Models\Messages;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -154,5 +155,14 @@ class ApiController extends Controller
         });
 
         return response()->json($messages);
+    }
+
+    public function markAsRead($conversationId)
+    {
+        $userId = Auth::id();
+
+        Messages::where('conversation_id', $conversationId)->where('sender_id', '!=', $userId)->whereNull('read_at')->update(['read_at' => now()]);
+
+        return response()->json(['status' => 'success']);
     }
 }

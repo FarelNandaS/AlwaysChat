@@ -30,6 +30,7 @@ Route::prefix('api')->middleware(['api', 'throttle:60,1'])->group(function () {
 
     Route::middleware('auth')->post('/add-conversation', [ApiController::class, 'addConversation'])->name('api.add-conversation');
     Route::middleware('auth')->post('/send-message', [ApiController::class, 'sendMessage'])->name('api.send-message');
+    ROute::middleware('auth')->post('/conversation/{conversation}/read', [ApiController::class, 'markAsRead'])->name('api.mark-as-read');
 
     Route::middleware('auth')->get('/conversations/{conversation}/messages', [ApiController::class, 'getMessages'])->name('api.getMessages');
 });

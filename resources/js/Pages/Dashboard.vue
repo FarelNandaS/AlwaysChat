@@ -121,12 +121,8 @@ onMounted(() => {
 
                     updateAndReorderSidebar(newMsg.conversation_id, plaintext, newMsg.created_at);
 
-                    if (activeChat.value && activeChat.value.id === newMsg.conversation_id) {
-                        messages.value.push({
-                            ...newMsg,
-                            plaintext: plaintext
-                        });
-                        scrollToBottom();
+                    if (!activeChat.value || activeChat.value.id !== newMsg.conversation_id) {
+                        targetChat.has_unread = true;
                     }
                 } catch (error) {
                     console.error('Gagal decrypt pesan incoming global:', error);
@@ -277,18 +273,21 @@ const sendMessage = async () => {
     }
 }
 
-const logout = () => {
-    localStorage.removeItem('my_private_key');
-
-    router.post(route('logout'));
-}
-
 const selectChat = async (chat) => {
     if (activeChat.value) {
         window.Echo.leave(`chat.${activeChat.value.id}`);
     }
 
     activeChat.value = chat
+
+    chat.has_unread = false;
+
+    try {
+        await axios.post(route('api.mark-as-read', {conversation: chat.id}));
+    } catch (error) {
+        console.error('Gagal memperbarui status baca pesan:', error);
+    }
+
     window.history.pushState({}, '', `/dashboard?chat=${chat.id}`)
 
     isLoadingMessages.value = true;
@@ -322,13 +321,21 @@ const selectChat = async (chat) => {
                 const plaintext = await decryptMessage(chat.public_key, newMsg.ciphertext, newMsg.iv);
                 messages.value.push({
                     ...newMsg,
-                    plaintext: plaintext
+                    plaintext: plaintext,
+                    has_unread: false,
                 });
             } catch (error) {
                 messages.value.push({
                     ...newMsg,
-                    plaintext: "[Gagal deksripsi pesan real-time]"
+                    plaintext: "[Gagal deksripsi pesan real-time]",
+                    has_unread: false,
                 });
+            }
+
+            try {
+                await axios.post(route('api.mark-as-read', {conversation: newMsg.conversation_id}));
+            } catch (error) {
+                console.error('Gagal memperbarui status baca pesan:', error);
             }
 
             scrollToBottom();
@@ -345,6 +352,12 @@ const outChat = () => {
     activeChat.value = null
     messages.value = [];
     window.history.pushState({}, '', `/dashboard`);
+}
+
+const logout = () => {
+    localStorage.removeItem('my_private_key');
+
+    router.post(route('logout'));
 }
 </script>
 
@@ -423,7 +436,12 @@ const outChat = () => {
                                 <h3 class="text-sm font-semibold text-slate-900 truncate">{{ chat.name }}</h3>
                                 <span class="text-[10px] text-slate-400">{{ chat.time }}</span>
                             </div>
-                            <p class="text-xs text-slate-500 truncate">{{ chat.lastMsg }}</p>
+                            <div class="flex justify-between items-center mt-1">
+                                <p class="text-xs text-slate-500 truncate">{{ chat.lastMsg }}</p>
+                                <span v-if="chat.has_unread"
+                                    class="w-2.5 h-2.5 bg-indigo-600 rounded-full flex-shrink-0 ml-2">
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -501,7 +519,7 @@ const outChat = () => {
                                 class="bg-indigo-600 p-3 rounded-2xl rounded-br-none shadow-md shadow-indigo-100 max-w-md">
                                 <p class="text-sm text-white break-words">{{ msg.plaintext || msg.ciphertext }}</p>
                                 <span class="text-[9px] text-indigo-200 mt-1 block text-right">{{ msg.created_at
-                                }}</span>
+                                    }}</span>
                             </div>
                         </div>
                     </template>
