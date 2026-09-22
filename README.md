@@ -1,10 +1,10 @@
 Ini adalah sebuah web messager real-time mengunakan protocol WebSocket, di dalam web ini anda bisa mengirim pesan membuat percakapan secara real-time dengan semua percakan terencrypt dan hanya bisa di lihat oleh anda dan penerima dari pesan tersebut. project ini mengunakan laravel 13 dan vue 6.
 
-###Requirement:
+Requirement:
 - php 8.3.30
 - node 22.17.1
 
-###Tech Stack:
+Tech Stack:
 - laravel 13
 - vue 6
 - laravel reverb
