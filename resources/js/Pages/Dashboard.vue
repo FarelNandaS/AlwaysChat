@@ -1,4 +1,5 @@
 <script setup>
+import { alert } from '@/Components/Alert.vue';
 import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
 import InputError from '@/Components/InputError.vue';
@@ -11,7 +12,6 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { decryptMessage, encryptMessage } from '@/Utils/CryptoHelper';
 import { Head, router, useForm, usePage } from '@inertiajs/vue3';
 import axios from 'axios';
-// import Echo from 'laravel-echo';
 import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 
 const props = defineProps({
@@ -157,9 +157,7 @@ onUnmounted(() => {
 });
 
 watch(() => props.conversations, async (newVal) => {
-    if (newVal && newVal.length > 0) {
-        await loadChat(newVal);
-    }
+    await loadChat(newVal);
 }, { immediate: true });
 
 watch(() => chats.value, () => {
@@ -212,7 +210,7 @@ const handleAddChat = async () => {
         AddForm.iv = iv;
     } catch (error) {
         console.error("Gagal encrypt:", error);
-        alert('Gagal mengamankan pesan pastikan private key tersimpan di browser.')
+        alert.error('Gagal mengamankan pesan pastikan private key tersimpan di browser.')
         return;
     }
 
@@ -267,7 +265,7 @@ const sendMessage = async () => {
         newMessageText.value = '';
     } catch (error) {
         console.error('Gagal mengirim pesan:', error);
-        alert('Gagal mengirim pesan.')
+        alert.error('Gagal mengirim pesan.')
     } finally {
         isSendingMessage.value = false;
     }
@@ -415,8 +413,12 @@ const logout = () => {
                     </div>
                 </div>
 
-                <div v-if="isLoadingChat" class="p-4 text-center text-slate-400 text-sm">
+                <div v-if="isLoadingChat" class="p-4 h-full flex justify-center items-center text-center text-slate-400 text-sm">
                     Memuat...
+                </div>
+
+                <div v-else-if="chats.length == 0" class="p-4 h-full flex justify-center items-center text-center text-slate-400 text-sm">
+                    Belum ada pesan, mulai percakapan baru.
                 </div>
 
                 <div v-else class="flex-1 overflow-y-auto">
