@@ -24,15 +24,15 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-Route::prefix('api')->middleware(['api', 'throttle:60,1'])->group(function () {
-    Route::middleware('auth')->get('/user/keys', [ApiController::class, 'userKeys'])->name('api.user.keys');
-    Route::middleware('auth')->get('/user/public_key', [ApiController::class, 'getPublicKey'])->name('api.user.public-key');
+Route::prefix('api')->middleware(['api', 'auth', 'throttle:60,1'])->group(function () {
+    Route::get('/user/keys', [ApiController::class, 'userKeys'])->name('api.user.keys');
+    Route::get('/user/public_key', [ApiController::class, 'getPublicKey'])->name('api.user.public-key');
 
-    Route::middleware('auth')->post('/add-conversation', [ApiController::class, 'addConversation'])->name('api.add-conversation');
-    Route::middleware('auth')->post('/send-message', [ApiController::class, 'sendMessage'])->name('api.send-message');
-    ROute::middleware('auth')->post('/conversation/{conversation}/read', [ApiController::class, 'markAsRead'])->name('api.mark-as-read');
+    Route::post('/add-conversation', [ApiController::class, 'addConversation'])->name('api.add-conversation');
+    Route::post('/send-message', [ApiController::class, 'sendMessage'])->name('api.send-message');
+    ROute::post('/conversation/{conversation}/read', [ApiController::class, 'markAsRead'])->name('api.mark-as-read');
 
-    Route::middleware('auth')->get('/conversations/{conversation}/messages', [ApiController::class, 'getMessages'])->name('api.getMessages');
+    Route::get('/conversations/{conversation}/messages', [ApiController::class, 'getMessages'])->name('api.getMessages');
 });
 
 require __DIR__ . '/auth.php';
