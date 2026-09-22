@@ -23,38 +23,51 @@ const verificationLinkSent = computed(
 
 <template>
     <GuestLayout>
-        <Head title="Email Verification" />
+        <Head title="Verifikasi Email" />
 
-        <div class="mb-4 text-sm text-gray-600">
-            Thanks for signing up! Before getting started, could you verify your
-            email address by clicking on the link we just emailed to you? If you
-            didn't receive the email, we will gladly send you another.
+        <!-- Header Branding / Salam -->
+        <div class="mb-6 text-center">
+            <h2 class="text-2xl font-bold text-slate-900 tracking-tight">
+                Verifikasi Email Anda
+            </h2>
+            <p class="text-xs text-slate-500 mt-1">
+                Terima kasih telah mendaftar di AlwaysChat!
+            </p>
         </div>
 
+        <div class="mb-5 text-xs text-slate-600 leading-relaxed text-center bg-slate-50 p-3.5 rounded-lg border border-slate-100">
+            Sebelum memulai, mohon verifikasi alamat email Anda dengan mengklik tautan yang baru saja kami kirimkan ke email Anda. Jika Anda tidak menerima email tersebut, kami dengan senang hati akan mengirimkannya kembali.
+        </div>
+
+        <!-- Notification Status -->
         <div
-            class="mb-4 text-sm font-medium text-green-600"
+            class="mb-5 p-3 rounded-lg bg-green-50 border border-green-200 text-xs font-medium text-green-700 text-center"
             v-if="verificationLinkSent"
         >
-            A new verification link has been sent to the email address you
-            provided during registration.
+            Tautan verifikasi baru telah dikirim ke alamat email yang Anda daftarkan.
         </div>
 
-        <form @submit.prevent="submit">
-            <div class="mt-4 flex items-center justify-between">
+        <form @submit.prevent="submit" class="space-y-4">
+            <div class="flex flex-col gap-3">
                 <PrimaryButton
-                    :class="{ 'opacity-25': form.processing }"
+                    class="w-full py-2.5 flex justify-center items-center font-semibold text-xs tracking-wide bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-lg shadow-sm transition-all duration-150"
+                    :class="{ 'opacity-50 cursor-not-allowed': form.processing }"
                     :disabled="form.processing"
                 >
-                    Resend Verification Email
+                    <span v-if="form.processing">Mengirim Ulang Email...</span>
+                    <span v-else>Kirim Ulang Email Verifikasi</span>
                 </PrimaryButton>
 
-                <Link
-                    :href="route('logout')"
-                    method="post"
-                    as="button"
-                    class="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                    >Log Out</Link
-                >
+                <div class="text-center pt-2 border-t border-slate-100">
+                    <Link
+                        :href="route('logout')"
+                        method="post"
+                        as="button"
+                        class="text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors"
+                    >
+                        Keluar / Log Out
+                    </Link>
+                </div>
             </div>
         </form>
     </GuestLayout>

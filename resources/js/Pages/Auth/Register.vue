@@ -20,7 +20,7 @@ const form = useForm({
 
 const submit = async () => {
     try {
-        const {publicKeyJwk, privateKeyJwk} = await generateKeyPair();
+        const { publicKeyJwk, privateKeyJwk } = await generateKeyPair();
 
         const encryptedPayload = await encryptPrivateKeyWithPassword(privateKeyJwk, form.password);
 
@@ -42,92 +42,117 @@ const submit = async () => {
 
 <template>
     <GuestLayout>
-        <Head title="Register" />
+        <Head title="Daftar Akun" />
 
-        <form @submit.prevent="submit">
+        <!-- Header Branding / Salam -->
+        <div class="mb-6 text-center">
+            <h2 class="text-2xl font-bold text-slate-900 tracking-tight">
+                Buat Akun Baru
+            </h2>
+            <p class="text-xs text-slate-500 mt-1">
+                Bergabunglah dengan AlwaysChat untuk menikmati perpesanan yang aman & terenkripsi.
+            </p>
+        </div>
+
+        <form @submit.prevent="submit" class="space-y-4">
+            <!-- Nama Lengkap Input -->
             <div>
-                <InputLabel for="name" value="Name" />
+                <InputLabel for="name" value="Nama Lengkap" class="text-slate-700 font-medium text-xs" />
 
-                <TextInput
-                    id="name"
-                    type="text"
-                    class="mt-1 block w-full"
-                    v-model="form.name"
-                    required
-                    autofocus
-                    autocomplete="name"
-                />
+                <div class="relative mt-1">
+                    <TextInput
+                        id="name"
+                        type="text"
+                        class="w-full px-3.5 py-2 text-sm border-slate-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        v-model="form.name"
+                        required
+                        autofocus
+                        autocomplete="name"
+                        placeholder="Nama Lengkap Anda"
+                    />
+                </div>
 
-                <InputError class="mt-2" :message="form.errors.name" />
+                <InputError class="mt-1.5 text-xs" :message="form.errors.name" />
             </div>
 
-            <div class="mt-4">
-                <InputLabel for="email" value="Email" />
+            <!-- Email Input -->
+            <div>
+                <InputLabel for="email" value="Alamat Email" class="text-slate-700 font-medium text-xs" />
 
-                <TextInput
-                    id="email"
-                    type="email"
-                    class="mt-1 block w-full"
-                    v-model="form.email"
-                    required
-                    autocomplete="username"
-                />
+                <div class="relative mt-1">
+                    <TextInput
+                        id="email"
+                        type="email"
+                        class="w-full px-3.5 py-2 text-sm border-slate-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        v-model="form.email"
+                        required
+                        autocomplete="username"
+                        placeholder="nama@email.com"
+                    />
+                </div>
 
-                <InputError class="mt-2" :message="form.errors.email" />
+                <InputError class="mt-1.5 text-xs" :message="form.errors.email" />
             </div>
 
-            <div class="mt-4">
-                <InputLabel for="password" value="Password" />
+            <!-- Password Input -->
+            <div>
+                <InputLabel for="password" value="Kata Sandi" class="text-slate-700 font-medium text-xs" />
 
-                <TextInput
-                    id="password"
-                    type="password"
-                    class="mt-1 block w-full"
-                    v-model="form.password"
-                    required
-                    autocomplete="new-password"
-                />
+                <div class="relative mt-1">
+                    <TextInput
+                        id="password"
+                        type="password"
+                        class="w-full px-3.5 py-2 text-sm border-slate-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        v-model="form.password"
+                        required
+                        autocomplete="new-password"
+                        placeholder="Minimal 8 karakter"
+                    />
+                </div>
 
-                <InputError class="mt-2" :message="form.errors.password" />
+                <InputError class="mt-1.5 text-xs" :message="form.errors.password" />
             </div>
 
-            <div class="mt-4">
-                <InputLabel
-                    for="password_confirmation"
-                    value="Confirm Password"
-                />
+            <!-- Password Confirmation Input -->
+            <div>
+                <InputLabel for="password_confirmation" value="Konfirmasi Kata Sandi" class="text-slate-700 font-medium text-xs" />
 
-                <TextInput
-                    id="password_confirmation"
-                    type="password"
-                    class="mt-1 block w-full"
-                    v-model="form.password_confirmation"
-                    required
-                    autocomplete="new-password"
-                />
+                <div class="relative mt-1">
+                    <TextInput
+                        id="password_confirmation"
+                        type="password"
+                        class="w-full px-3.5 py-2 text-sm border-slate-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        v-model="form.password_confirmation"
+                        required
+                        autocomplete="new-password"
+                        placeholder="Ulangi kata sandi"
+                    />
+                </div>
 
-                <InputError
-                    class="mt-2"
-                    :message="form.errors.password_confirmation"
-                />
+                <InputError class="mt-1.5 text-xs" :message="form.errors.password_confirmation" />
             </div>
 
-            <div class="mt-4 flex items-center justify-end">
-                <Link
-                    :href="route('login')"
-                    class="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                >
-                    Already registered?
-                </Link>
-
+            <!-- Submit Button -->
+            <div class="pt-2">
                 <PrimaryButton
-                    class="ms-4"
-                    :class="{ 'opacity-25': form.processing }"
+                    class="w-full py-2.5 flex justify-center items-center font-semibold text-xs tracking-wide bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-lg shadow-sm transition-all duration-150"
+                    :class="{ 'opacity-50 cursor-not-allowed': form.processing }"
                     :disabled="form.processing"
                 >
-                    Register
+                    <span v-if="form.processing">Membuat Akun & Kunci Kriptografi...</span>
+                    <span v-else>Daftar Akun</span>
                 </PrimaryButton>
             </div>
         </form>
+
+        <!-- Footer Link ke Halaman Login -->
+        <div class="mt-6 text-center border-t border-slate-100 pt-4">
+            <p class="text-xs text-slate-500">
+                Sudah memiliki akun?
+                <Link :href="route('login')" class="font-semibold text-indigo-600 hover:text-indigo-500 transition-colors ml-0.5">
+                    Masuk di sini
+                </Link>
+            </p>
+        </div>
     </GuestLayout>
 </template>

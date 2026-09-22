@@ -31,6 +31,9 @@ cp .env.example .env
 #generate key app
 php artisan key:generate
 
+#init reverb
+php artisan reverb:install
+
 #configure env
 CEK .env YANG SUDAH DI COPY LALU ATUR AGAR SESUAI DENGAN KEBUTUHAN ANDA
 
