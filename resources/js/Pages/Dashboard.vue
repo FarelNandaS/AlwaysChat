@@ -277,19 +277,12 @@ const selectChat = async (chat) => {
     }
 
     activeChat.value = chat
+    messages.value = [];
+    isLoadingMessages.value = true;
 
     chat.has_unread = false;
 
-    try {
-        await axios.post(route('api.mark-as-read', {conversation: chat.id}));
-    } catch (error) {
-        console.error('Gagal memperbarui status baca pesan:', error);
-    }
-
     window.history.pushState({}, '', `/dashboard?chat=${chat.id}`)
-
-    isLoadingMessages.value = true;
-    messages.value = [];
 
     try {
         const response = await axios.get(route('api.getMessages', { conversation: chat.id }));
@@ -340,6 +333,12 @@ const selectChat = async (chat) => {
             updateAndReorderSidebar(chat.id, message.value[message.value.length - 1].plaintext, newMsg.created_at);
         }
     });
+
+    try {
+        await axios.post(route('api.mark-as-read', {conversation: chat.id}));
+    } catch (error) {
+        console.error('Gagal memperbarui status baca pesan:', error);
+    }
 }
 
 const outChat = () => {
