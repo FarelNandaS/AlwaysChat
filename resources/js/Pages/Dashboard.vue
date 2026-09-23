@@ -12,7 +12,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { decryptMessage, encryptMessage } from '@/Utils/CryptoHelper';
 import { Head, router, useForm, usePage } from '@inertiajs/vue3';
 import axios from 'axios';
-import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 
 const props = defineProps({
     conversations: {
@@ -42,6 +42,7 @@ const chats = ref([]);
 const onlineUserId = ref([]);
 
 const newMessageText = ref('');
+const searchChat = ref('');
 
 const isLoadingMessages = ref(false);
 const isFetchingKey = ref(false);
@@ -183,6 +184,7 @@ const handleAddChat = async () => {
 
     if (existingChat) {
         selectChat(existingChat);
+        newMessageText.value = AddForm.chat;
         closeAddModal();
         return;
     }
@@ -235,6 +237,12 @@ const handleAddChat = async () => {
         },
     })
 }
+
+const filteredChat = computed(() => {
+    if (!searchChat.value.trim()) return chats.value;
+
+    return chats.value.filter(c => c.name.toLowerCase().includes(searchChat.value.toLowerCase()));
+})
 
 const sendMessage = async () => {
     if (!newMessageText.value || !activeChat.value) return;
@@ -402,7 +410,7 @@ const logout = () => {
                         </div>
                     </div>
                     <div class="relative">
-                        <input type="text" placeholder="Cari pesan atau teman..."
+                        <input type="text" placeholder="Cari percakapan..." v-model="searchChat"
                             class="w-full pl-10 pr-4 py-2 bg-slate-100 border-none rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 transition-all" />
                         <svg class="w-4 h-4 absolute left-3 top-3 text-slate-400" fill="none" stroke="currentColor"
                             viewBox="0 0 24 24">
@@ -415,13 +423,17 @@ const logout = () => {
                 <div v-if="isLoadingChat" class="p-4 h-full flex justify-center items-center text-center text-slate-400 text-sm">
                     Memuat...
                 </div>
-
-                <div v-else-if="chats.length == 0" class="p-4 h-full flex justify-center items-center text-center text-slate-400 text-sm">
+                
+                <div v-else-if="filteredChat.length == 0 && !searchChat.trim()" class="p-4 h-full flex justify-center items-center text-center text-slate-400 text-sm">
                     Belum ada pesan, mulai percakapan baru.
                 </div>
 
+                <div v-if="filteredChat.length == 0 && searchChat.trim()" class="p-4 h-full flex justify-center items-center text-center text-slate-400 text-sm">
+                    Chat tidak ditemukan, silahkan buat percakapan baru.
+                </div>
+
                 <div v-else class="flex-1 overflow-y-auto">
-                    <div v-for="chat in chats" :key="chat.id"
+                    <div v-for="chat in filteredChat" :key="chat.id"
                         class="flex items-center gap-4 p-4 hover:bg-slate-50 cursor-pointer transition-colors border-b border-slate-50"
                         @click="selectChat(chat)">
                         <div class="relative">
