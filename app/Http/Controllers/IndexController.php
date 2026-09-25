@@ -39,4 +39,8 @@ class IndexController extends Controller
             'conversations' => $conversations
         ]);
     }
+
+    public function settings() {
+        return Inertia::render('Settings');
+    }
 }

@@ -371,16 +371,16 @@ const logout = () => {
     <Head title="AlwaysChat - Dashboard" />
 
     <AuthenticatedLayout>
-        <div class="flex h-[100vh] overflow-hidden bg-slate-100">
+        <div class="flex h-[100vh] overflow-hidden bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-100 transition-colors duration-200">
 
             <aside
-                class="w-full md:w-96 bg-white border-r border-slate-200 flex flex-col transition-all duration-300 ease-in-out"
+                class="w-full md:w-96 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col transition-all duration-300 ease-in-out"
                 :class="{ 'hidden md:flex': activeChat, 'flex': !activeChat }">
-                <div class="p-4 border-b border-slate-100">
+                <div class="p-4 border-b border-slate-100 dark:border-slate-800">
                     <div class="p-2 flex items-center justify-between">
-                        <h3 class="font-bold text-2xl">Chats</h3>
-                        <div class="flex items-center justify-center">
-                            <button class="hover:text-indigo-600" @click="openAddModal"><svg width="24" height="24"
+                        <h3 class="font-bold text-2xl text-slate-900 dark:text-slate-100">Chats</h3>
+                        <div class="flex items-center justify-center gap-1 text-slate-600 dark:text-slate-300">
+                            <button class="hover:text-indigo-600 dark:hover:text-indigo-400" @click="openAddModal"><svg width="24" height="24"
                                     viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <path d="M6 12.0002H18.0007M12.0002 6V18.0007" stroke="currentColor"
                                         stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
@@ -388,7 +388,7 @@ const logout = () => {
                             </button>
                             <Dropdown>
                                 <template #trigger>
-                                    <button class="hover:text-indigo-600"><svg class="w-5 h-5" fill="none"
+                                    <button class="hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center"><svg class="w-5 h-5" fill="none"
                                             stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                 d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z">
@@ -399,8 +399,11 @@ const logout = () => {
                                     <DropdownLink :href="route('profile.edit')">
                                         Profile saya
                                     </DropdownLink>
+                                    <DropdownLink :href="route('settings')">
+                                        Settings
+                                    </DropdownLink>
 
-                                    <div class="border-t border-gray-200" />
+                                    <div class="border-t border-slate-200 dark:border-slate-700" />
 
                                     <DropdownLink href="#" as="button" @click.prevent="logout">
                                         Logout
@@ -411,8 +414,8 @@ const logout = () => {
                     </div>
                     <div class="relative">
                         <input type="text" placeholder="Cari percakapan..." v-model="searchChat"
-                            class="w-full pl-10 pr-4 py-2 bg-slate-100 border-none rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 transition-all" />
-                        <svg class="w-4 h-4 absolute left-3 top-3 text-slate-400" fill="none" stroke="currentColor"
+                            class="w-full pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 border-none rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 transition-all placeholder-slate-400 dark:placeholder-slate-500" />
+                        <svg class="w-4 h-4 absolute left-3 top-3 text-slate-400 dark:text-slate-500" fill="none" stroke="currentColor"
                             viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
@@ -420,39 +423,39 @@ const logout = () => {
                     </div>
                 </div>
 
-                <div v-if="isLoadingChat" class="p-4 h-full flex justify-center items-center text-center text-slate-400 text-sm">
+                <div v-if="isLoadingChat" class="p-4 h-full flex justify-center items-center text-center text-slate-400 dark:text-slate-500 text-sm">
                     Memuat...
                 </div>
                 
-                <div v-else-if="filteredChat.length == 0 && !searchChat.trim()" class="p-4 h-full flex justify-center items-center text-center text-slate-400 text-sm">
+                <div v-else-if="chats.length == 0" class="p-4 h-full flex justify-center items-center text-center text-slate-400 dark:text-slate-500 text-sm">
                     Belum ada pesan, mulai percakapan baru.
                 </div>
 
-                <div v-if="filteredChat.length == 0 && searchChat.trim()" class="p-4 h-full flex justify-center items-center text-center text-slate-400 text-sm">
+                <div v-if="filteredChat.length == 0 && searchChat.trim()" class="p-4 h-full flex justify-center items-center text-center text-slate-400 dark:text-slate-500 text-sm">
                     Chat tidak ditemukan, silahkan buat percakapan baru.
                 </div>
 
                 <div v-else class="flex-1 overflow-y-auto">
                     <div v-for="chat in filteredChat" :key="chat.id"
-                        class="flex items-center gap-4 p-4 hover:bg-slate-50 cursor-pointer transition-colors border-b border-slate-50"
+                        class="flex items-center gap-4 p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors border-b border-slate-50 dark:border-slate-800/40"
                         @click="selectChat(chat)">
                         <div class="relative">
                             <div
-                                class="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center font-bold text-indigo-600">
+                                class="w-12 h-12 rounded-full bg-indigo-100 dark:bg-indigo-950 flex items-center justify-center font-bold text-indigo-600 dark:text-indigo-400">
                                 {{ chat.name.charAt(0) }}
                             </div>
                             <span v-if="chat.online"
-                                class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>
+                                class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white dark:border-slate-900 rounded-full"></span>
                         </div>
                         <div class="flex-1 min-w-0">
                             <div class="flex justify-between items-baseline">
-                                <h3 class="text-sm font-semibold text-slate-900 truncate">{{ chat.name }}</h3>
-                                <span class="text-[10px] text-slate-400">{{ chat.time }}</span>
+                                <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{{ chat.name }}</h3>
+                                <span class="text-[10px] text-slate-400 dark:text-slate-500">{{ chat.time }}</span>
                             </div>
                             <div class="flex justify-between items-center mt-1">
-                                <p class="text-xs text-slate-500 truncate">{{ chat.lastMsg }}</p>
+                                <p class="text-xs text-slate-500 dark:text-slate-400 truncate">{{ chat.lastMsg }}</p>
                                 <span v-if="chat.has_unread"
-                                    class="w-2.5 h-2.5 bg-indigo-600 rounded-full flex-shrink-0 ml-2">
+                                    class="w-2.5 h-2.5 bg-indigo-600 dark:bg-indigo-500 rounded-full flex-shrink-0 ml-2">
                                 </span>
                             </div>
                         </div>
@@ -461,11 +464,11 @@ const logout = () => {
             </aside>
 
             <main v-if="activeChat"
-                class="flex-1 flex flex-col bg-white w-full h-full absolute md:relative inset-0 md:inset-auto z-20 md:z-auto transition-all duration-300 ease-in-out">
+                class="flex-1 flex flex-col bg-white dark:bg-slate-900 w-full h-full absolute md:relative inset-0 md:inset-auto z-20 md:z-auto transition-all duration-300 ease-in-out">
                 <header
-                    class="h-16 px-6 border-b border-slate-200 flex items-center justify-between bg-white/80 backdrop-blur-md z-10">
+                    class="h-16 px-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-white/80 dark:bg-slate-900/80 backdrop-blur-md z-10">
                     <div class="flex items-center gap-3">
-                        <button class="hover:text-indigo-600" @click="outChat">
+                        <button class="hover:text-indigo-600 dark:hover:text-indigo-400 text-slate-600 dark:text-slate-300" @click="outChat">
                             <svg width="25" height="25" viewBox="0 0 25 25" fill="none"
                                 xmlns="http://www.w3.org/2000/svg">
                                 <path
@@ -473,27 +476,27 @@ const logout = () => {
                                     fill="currentColor" />
                             </svg>
                         </button>
-                        <div class="w-10 h-10 rounded-full bg-slate-200">
+                        <div class="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-800">
                             <div
-                                class="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center font-bold text-indigo-600">
+                                class="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-950 flex items-center justify-center font-bold text-indigo-600 dark:text-indigo-400">
                                 {{ activeChat.name.charAt(0) }}
                             </div>
                         </div>
                         <div>
-                            <h2 class="text-sm font-bold text-slate-900">{{ activeChat.name }}</h2>
+                            <h2 class="text-sm font-bold text-slate-900 dark:text-slate-100">{{ activeChat.name }}</h2>
                             <p v-if="activeChat.online"
                                 class="text-[10px] text-green-500 font-medium uppercase tracking-wider">
                                 Online</p>
-                            <p v-else class="text-[10px] text-gray-500 font-medium uppercase tracking-wider">Offline</p>
+                            <p v-else class="text-[10px] text-slate-400 dark:text-slate-500 font-medium uppercase tracking-wider">Offline</p>
                         </div>
                     </div>
-                    <div class="flex gap-4 text-slate-400">
-                        <button class="hover:text-indigo-600"><svg class="w-5 h-5" fill="none" stroke="currentColor"
+                    <div class="flex gap-4 text-slate-400 dark:text-slate-500">
+                        <button class="hover:text-indigo-600 dark:hover:text-indigo-400"><svg class="w-5 h-5" fill="none" stroke="currentColor"
                                 viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                             </svg></button>
-                        <button class="hover:text-indigo-600"><svg class="w-5 h-5" fill="none" stroke="currentColor"
+                        <button class="hover:text-indigo-600 dark:hover:text-indigo-400"><svg class="w-5 h-5" fill="none" stroke="currentColor"
                                 viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z">
@@ -502,34 +505,28 @@ const logout = () => {
                     </div>
                 </header>
 
-                <div ref="messageContainer" class="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/50">
-                    <!-- Loading State -->
-                    <div v-if="isLoadingMessages" class="flex justify-center items-center h-full text-slate-400">
+                <div ref="messageContainer" class="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/50 dark:bg-slate-950/40">
+                    <div v-if="isLoadingMessages" class="flex justify-center items-center h-full text-slate-400 dark:text-slate-500">
                         <p class="text-sm">Memuat pesan...</p>
                     </div>
 
-                    <!-- Pesan Kosong -->
                     <div v-else-if="messages.length === 0"
-                        class="flex justify-center items-center h-full text-slate-400">
+                        class="flex justify-center items-center h-full text-slate-400 dark:text-slate-500">
                         <p class="text-sm">Belum ada percakapan. Mulai kirim pesan!</p>
                     </div>
 
-                    <!-- Loop Render Pesan Real -->
                     <template v-else>
                         <div v-for="msg in messages" :key="msg.id" class="flex items-end gap-2"
                             :class="{ 'justify-end': msg.sender_id === currentUserId }">
 
-                            <!-- Pesan Masuk (Lawan Bicara) -->
                             <div v-if="msg.sender_id !== currentUserId"
-                                class="bg-white border border-slate-200 p-3 rounded-2xl rounded-bl-none shadow-sm max-w-md">
-                                <!-- Tampilkan ciphertext (atau plain text jika sudah didekripsi) -->
-                                <p class="text-sm text-slate-700 break-words">{{ msg.plaintext || msg.ciphertext }}</p>
-                                <span class="text-[9px] text-slate-400 mt-1 block">{{ msg.created_at }}</span>
+                                class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 p-3 rounded-2xl rounded-bl-none shadow-sm max-w-md">
+                                <p class="text-sm text-slate-700 dark:text-slate-200 break-words">{{ msg.plaintext || msg.ciphertext }}</p>
+                                <span class="text-[9px] text-slate-400 dark:text-slate-500 mt-1 block">{{ msg.created_at }}</span>
                             </div>
 
-                            <!-- Pesan Keluar (User Sendiri) -->
                             <div v-else
-                                class="bg-indigo-600 p-3 rounded-2xl rounded-br-none shadow-md shadow-indigo-100 max-w-md">
+                                class="bg-indigo-600 dark:bg-indigo-500 p-3 rounded-2xl rounded-br-none shadow-md shadow-indigo-100 dark:shadow-none max-w-md">
                                 <p class="text-sm text-white break-words">{{ msg.plaintext || msg.ciphertext }}</p>
                                 <span class="text-[9px] text-indigo-200 mt-1 block text-right">{{ msg.created_at
                                     }}</span>
@@ -538,10 +535,10 @@ const logout = () => {
                     </template>
                 </div>
 
-                <footer class="p-4 bg-white border-t border-slate-200">
+                <footer class="p-4 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800">
                     <form @submit.prevent="sendMessage"
-                        class="max-w-4xl mx-auto flex items-center gap-3 bg-slate-100 rounded-2xl px-4 py-2 focus-within:ring-2 focus-within:ring-indigo-500 transition-all">
-                        <button class="text-slate-400 hover:text-indigo-600 transition-colors">
+                        class="max-w-4xl mx-auto flex items-center gap-3 bg-slate-100 dark:bg-slate-800 rounded-2xl px-4 py-2 focus-within:ring-2 focus-within:ring-indigo-500 transition-all">
+                        <button type="button" class="text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z">
@@ -550,9 +547,9 @@ const logout = () => {
                         </button>
                         <input v-model="newMessageText" type="text" placeholder="Tulis pesan..."
                             :disabled="isSendingMessage"
-                            class="flex-1 bg-transparent border-none focus:ring-0 text-sm text-slate-700 disabled:opacity-50" />
+                            class="flex-1 bg-transparent border-none focus:ring-0 text-sm text-slate-700 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 disabled:opacity-50" />
                         <button type="submit" :disabled="isSendingMessage || !newMessageText.trim()"
-                            class="bg-indigo-600 text-white p-2 rounded-xl hover:bg-indigo-700 transition-all active:scale-95 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
+                            class="bg-indigo-600 dark:bg-indigo-500 text-white p-2 rounded-xl hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-all active:scale-95 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
@@ -562,30 +559,30 @@ const logout = () => {
                 </footer>
             </main>
 
-            <main v-else class="flex-1 hidden md:flex flex-col items-center justify-center bg-slate-50 text-slate-400">
+            <main v-else class="flex-1 hidden md:flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 text-slate-400 dark:text-slate-500">
                 <p>Pilih salah satu chat untuk memulai perpesanan</p>
             </main>
 
             <Modal :show="isAddModalOpen" @close="closeAddModal" max-width="md">
-                <div class="p-6">
-                    <h2 class="text-lg font-bold text-slate-900 mb-4">
+                <div class="p-6 bg-white dark:bg-slate-900">
+                    <h2 class="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4">
                         Mulai Chat Baru
                     </h2>
 
                     <form @submit.prevent="handleAddChat">
                         <div>
-                            <InputLabel for="email" value="Email Pengguna*" />
+                            <InputLabel for="email" value="Email Pengguna*" class="dark:text-slate-300" />
 
-                            <TextInput id="email" type="email" class="mt-1 block w-full" v-model="AddForm.email"
+                            <TextInput id="email" type="email" class="mt-1 block w-full dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700" v-model="AddForm.email"
                                 placeholder="user@gmail.com" required autofocus />
 
                             <InputError class="mt-2" :message="AddForm.errors.email" />
                         </div>
 
                         <div class="mt-2">
-                            <InputLabel for="chat" value="Chat*" />
+                            <InputLabel for="chat" value="Chat*" class="dark:text-slate-300" />
 
-                            <TextInput id="chat" type="text" class="mt-1 block w-full" v-model="AddForm.chat"
+                            <TextInput id="chat" type="text" class="mt-1 block w-full dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700" v-model="AddForm.chat"
                                 placeholder="Ketik Pesan..." required autofocus />
 
                             <InputError class="mt-2" :message="AddForm.errors.chat" />
@@ -611,7 +608,6 @@ const logout = () => {
 </template>
 
 <style scoped>
-/* Custom scrollbar agar lebih minimalis */
 .overflow-y-auto::-webkit-scrollbar {
     width: 4px;
 }
@@ -619,5 +615,9 @@ const logout = () => {
 .overflow-y-auto::-webkit-scrollbar-thumb {
     background-color: #e2e8f0;
     border-radius: 10px;
+}
+
+:deep(.dark) .overflow-y-auto::-webkit-scrollbar-thumb {
+    background-color: #334155;
 }
 </style>

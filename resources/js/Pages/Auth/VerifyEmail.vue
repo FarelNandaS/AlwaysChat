@@ -25,23 +25,21 @@ const verificationLinkSent = computed(
     <GuestLayout>
         <Head title="Verifikasi Email" />
 
-        <!-- Header Branding / Salam -->
         <div class="mb-6 text-center">
-            <h2 class="text-2xl font-bold text-slate-900 tracking-tight">
+            <h2 class="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
                 Verifikasi Email Anda
             </h2>
-            <p class="text-xs text-slate-500 mt-1">
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
                 Terima kasih telah mendaftar di AlwaysChat!
             </p>
         </div>
 
-        <div class="mb-5 text-xs text-slate-600 leading-relaxed text-center bg-slate-50 p-3.5 rounded-lg border border-slate-100">
+        <div class="mb-5 text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-center bg-slate-50 dark:bg-slate-800/50 p-3.5 rounded-lg border border-slate-100 dark:border-slate-800">
             Sebelum memulai, mohon verifikasi alamat email Anda dengan mengklik tautan yang baru saja kami kirimkan ke email Anda. Jika Anda tidak menerima email tersebut, kami dengan senang hati akan mengirimkannya kembali.
         </div>
 
-        <!-- Notification Status -->
         <div
-            class="mb-5 p-3 rounded-lg bg-green-50 border border-green-200 text-xs font-medium text-green-700 text-center"
+            class="mb-5 p-3 rounded-lg bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800 text-xs font-medium text-green-700 dark:text-green-300 text-center"
             v-if="verificationLinkSent"
         >
             Tautan verifikasi baru telah dikirim ke alamat email yang Anda daftarkan.
@@ -50,7 +48,7 @@ const verificationLinkSent = computed(
         <form @submit.prevent="submit" class="space-y-4">
             <div class="flex flex-col gap-3">
                 <PrimaryButton
-                    class="w-full py-2.5 flex justify-center items-center font-semibold text-xs tracking-wide bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-lg shadow-sm transition-all duration-150"
+                    class="w-full py-2.5 flex justify-center items-center font-semibold text-xs tracking-wide bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 active:bg-indigo-800 text-white rounded-lg shadow-sm transition-all duration-150"
                     :class="{ 'opacity-50 cursor-not-allowed': form.processing }"
                     :disabled="form.processing"
                 >
@@ -58,12 +56,12 @@ const verificationLinkSent = computed(
                     <span v-else>Kirim Ulang Email Verifikasi</span>
                 </PrimaryButton>
 
-                <div class="text-center pt-2 border-t border-slate-100">
+                <div class="text-center pt-2 border-t border-slate-100 dark:border-slate-800">
                     <Link
                         :href="route('logout')"
                         method="post"
                         as="button"
-                        class="text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors"
+                        class="text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"
                     >
                         Keluar / Log Out
                     </Link>
