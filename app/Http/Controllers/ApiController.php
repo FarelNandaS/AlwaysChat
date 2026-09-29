@@ -65,7 +65,9 @@ class ApiController extends Controller
             ]);
         }
 
-        $conversation = DB::transaction(function () use ($currentUser, $targetUser, $request) {
+        $createdMessage = null;
+
+        $conversation = DB::transaction(function () use ($currentUser, $targetUser, $request, &$createdMessage) {
             $existingConversation = Conversation::whereHas('users', function ($q) use ($currentUser) {
                 $q->where('users.id', $currentUser->id);
             })->whereHas('users', function ($q) use ($targetUser) {
@@ -79,7 +81,7 @@ class ApiController extends Controller
                 $conversation->users()->attach([$currentUser->id, $targetUser->id]);
             }
 
-            $conversation->message()->create([
+            $createdMessage = $conversation->message()->create([
                 'sender_id' => $currentUser->id,
                 'ciphertext' => $request->ciphertext,
                 'iv' => $request->iv ?? '',
@@ -89,6 +91,10 @@ class ApiController extends Controller
 
             return $conversation;
         });
+
+        $createdMessage->load('sender');
+
+        broadcast(new MessageSent($createdMessage, $targetUser->id, $conversation))->toOthers();
 
         return back()->with('flash', [
             'conversation' => [
