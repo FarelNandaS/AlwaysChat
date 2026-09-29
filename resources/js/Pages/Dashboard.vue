@@ -553,9 +553,9 @@ const logout = () => {
                                 }}</span>
                             </div>
 
-                            <div v-else class="flex items-center justify-end gap-2 group">
+                            <div v-else class="flex items-center justify-end gap-2 group relative z-10">
                                 <Dropdown align="right" width="48"
-                                    content-classes="bottom-full mb-1 py-1 bg-white dark:bg-slate-800">
+                                    content-classes="top-full mb-1 py-1 bg-white dark:bg-slate-800 z-50">
                                     <template #trigger>
                                         <button type="button"
                                             class="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full opacity-0 group-hover:opacity-100 transition-opacity focus:outline-none">
@@ -614,7 +614,7 @@ const logout = () => {
                     </template>
                 </div>
 
-                <footer class="p-4 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 z-0">
+                <footer class="p-4 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800">
                     <form @submit.prevent="sendMessage"
                         class="max-w-4xl mx-auto flex items-center gap-3 bg-slate-100 dark:bg-slate-800 rounded-2xl px-4 py-2 focus-within:ring-2 focus-within:ring-indigo-500 transition-all">
                         <button type="button"
