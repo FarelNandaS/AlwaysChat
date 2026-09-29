@@ -32,7 +32,8 @@ Route::prefix('api')->middleware(['api', 'auth', 'throttle:60,1'])->group(functi
 
     Route::post('/add-conversation', [ApiController::class, 'addConversation'])->name('api.add-conversation');
     Route::post('/send-message', [ApiController::class, 'sendMessage'])->name('api.send-message');
-    ROute::post('/conversation/{conversation}/read', [ApiController::class, 'markAsRead'])->name('api.mark-as-read');
+    Route::post('/conversation/{conversation}/read', [ApiController::class, 'markAsRead'])->name('api.mark-as-read');
+    Route::post('/message/edit', [ApiController::class, 'editMessage'])->name('api.edit-message');
 
     Route::get('/conversations/{conversation}/messages', [ApiController::class, 'getMessages'])->name('api.getMessages');
 });

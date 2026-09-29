@@ -22,10 +22,18 @@ const props = defineProps({
 });
 
 const isAddModalOpen = ref(false);
+const isEditMessageModalOpen = ref(false);
 
 const AddForm = useForm({
     email: '',
     chat: '',
+    ciphertext: '',
+    iv: '',
+});
+
+const EditForm = useForm({
+    message: '',
+    id: null,
     ciphertext: '',
     iv: '',
 });
@@ -36,6 +44,7 @@ const currentUserId = page.props.auth.user.id;
 const activeChat = ref(null);
 const activeChannel = ref(null);
 const messageContainer = ref(null);
+const selectedMessage = ref(null);
 
 const messages = ref([]);
 const chats = ref([]);
@@ -251,6 +260,51 @@ const handleAddChat = async () => {
     })
 }
 
+const openEditMessageModal = (msg) => {
+    selectedMessage.value = msg;
+    EditForm.id = msg.id;
+    EditForm.message = msg.plaintext;
+    isEditMessageModalOpen.value = true;
+}
+
+const closeEditMessageModal = () => {
+    isEditMessageModalOpen.value = false;
+    EditForm.message = '';
+    EditForm.id = null;
+    selectedMessage.value = null;
+}
+
+const handleEditMessage = async () => {
+    if (!EditForm.message) return;
+
+    const rawPlainText = EditForm.message;
+
+    const existingChat = chats.value.find(c => c.id === selectedMessage.value.conversation_id);
+
+    try {
+        const {ciphertext, iv} = await encryptMessage(existingChat.public_key, rawPlainText);
+        EditForm.ciphertext = ciphertext;
+        EditForm.iv = iv;
+    } catch (error) {
+        console.error('Gagal encrypt:', error);
+        alert.error('Gagal mengamankan pesan pastikan private key sudah tersimpan dalam browser.');
+        return;
+    }
+
+    EditForm.post(route('api.edit-message'), {
+        preserveScroll: true,
+        onSuccess: () => {
+            const messageIndex = messages.value.findIndex(m => m.id === selectedMessage.value.id);
+
+            if (messageIndex) {
+                messages.value[messageIndex].plaintext = rawPlainText;
+            }
+
+            closeEditMessageModal();
+        }
+    })
+}
+
 const filteredChat = computed(() => {
     if (!searchChat.value.trim()) return chats.value;
 
@@ -325,35 +379,58 @@ const selectChat = async (chat) => {
         scrollToBottom();
     }
 
-    activeChannel.value = window.Echo.private(`chat.${chat.id}`).listen('.message.sent', async (e) => {
-        const newMsg = e.message;
+    activeChannel.value = window.Echo.private(`chat.${chat.id}`)
+        .listen('.message.sent', async (e) => {
+            const newMsg = e.message;
 
-        if (newMsg.sender_id !== currentUserId) {
-            try {
-                const plaintext = await decryptMessage(chat.public_key, newMsg.ciphertext, newMsg.iv);
-                messages.value.push({
-                    ...newMsg,
-                    plaintext: plaintext,
-                    has_unread: false,
-                });
-            } catch (error) {
-                messages.value.push({
-                    ...newMsg,
-                    plaintext: "[Gagal deksripsi pesan real-time]",
-                    has_unread: false,
-                });
+            if (newMsg.sender_id !== currentUserId) {
+                try {
+                    const plaintext = await decryptMessage(chat.public_key, newMsg.ciphertext, newMsg.iv);
+                    messages.value.push({
+                        ...newMsg,
+                        plaintext: plaintext,
+                        has_unread: false,
+                    });
+                } catch (error) {
+                    messages.value.push({
+                        ...newMsg,
+                        plaintext: "[Gagal deksripsi pesan real-time]",
+                        has_unread: false,
+                    });
+                }
+
+                try {
+                    await axios.post(route('api.mark-as-read', { conversation: newMsg.conversation_id }));
+                } catch (error) {
+                    console.error('Gagal memperbarui status baca pesan:', error);
+                }
+
+                scrollToBottom();
+                updateAndReorderSidebar(chat.id, message.value[message.value.length - 1].plaintext, newMsg.created_at);
             }
+        })
+        .listen('.message.edited', async (e) => {
+            const updatedMsg = e.message;
 
-            try {
-                await axios.post(route('api.mark-as-read', { conversation: newMsg.conversation_id }));
-            } catch (error) {
-                console.error('Gagal memperbarui status baca pesan:', error);
+            const messageIndex = messages.value.findIndex(m => m.id === updatedMsg.id);
+            if (messageIndex !== -1) {
+                try {
+                    const plaintext = await decryptMessage(chat.public_key, updatedMsg.ciphertext, updatedMsg.iv);
+
+                    messages.value[messageIndex].plaintext = plaintext;
+                    messages.value[messageIndex].ciphertext = updatedMsg.ciphertext;
+                    messages.value[messageIndex].iv = updatedMsg.iv;
+
+                    if (messageIndex == messages.value.length - 1) {
+                        const existingChat = chats.value.find(c => c.id === updatedMsg.conversation_id);
+
+                        existingChat.lastMsg = plaintext;
+                    }
+                } catch (error) {
+                    console.error('Gagal encrypt pesan teredit:', error);
+                }
             }
-
-            scrollToBottom();
-            updateAndReorderSidebar(chat.id, message.value[message.value.length - 1].plaintext, newMsg.created_at);
-        }
-    });
+        });
 
     try {
         await axios.post(route('api.mark-as-read', { conversation: chat.id }));
@@ -577,7 +654,7 @@ const logout = () => {
                                             Copy
                                         </button>
 
-                                        <button @click="openEditModal(msg)"
+                                        <button @click="openEditMessageModal(msg)"
                                             class="w-full px-4 py-2 text-start text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/60 focus:outline-none transition duration-150 ease-in-out flex items-center gap-2">
                                             <svg class="w-3.5 h-3.5 text-indigo-500" fill="none" stroke="currentColor"
                                                 viewBox="0 0 24 24">
@@ -662,7 +739,7 @@ const logout = () => {
                         </div>
 
                         <div class="mt-2">
-                            <InputLabel for="chat" value="Chat*" class="dark:text-slate-300" />
+                            <InputLabel for="chat" value="Message*" class="dark:text-slate-300" />
 
                             <TextInput id="chat" type="text"
                                 class="mt-1 block w-full dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700"
@@ -685,9 +762,36 @@ const logout = () => {
                     </form>
                 </div>
             </Modal>
+            
+            <Modal :show="isEditMessageModalOpen" @close="closeEditMessageModal" max-width="md">
+                <div class="p-6 bg-white dark:bg-slate-900">
+                    <h2 class="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4">
+                        Edit Pesan
+                    </h2>
 
-            <Modal>
-                
+                    <form @submit.prevent="handleEditMessage">
+                        <div class="mt-2">
+                            <InputLabel for="message" value="Message*" class="dark:text-slate-300" />
+
+                            <TextInput id="message" type="text"
+                                class="mt-1 block w-full dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700"
+                                v-model="EditForm.message" placeholder="Ketik Pesan..." required autofocus />
+
+                            <InputError class="mt-2" :message="EditForm.errors.message" />
+                        </div>
+
+                        <div class="mt-6 flex justify-end gap-3">
+                            <SecondaryButton @click="closeEditMessageModal">
+                                Batal
+                            </SecondaryButton>
+
+                            <PrimaryButton :disabled="EditForm.processing">
+                                <span v-if="EditForm.processing">Memproses...</span>
+                                <span v-else>Edit</span>
+                            </PrimaryButton>
+                        </div>
+                    </form>
+                </div>
             </Modal>
         </div>
     </AuthenticatedLayout>

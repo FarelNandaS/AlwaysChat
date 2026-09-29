@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\MessageEdited;
 use App\Events\MessageSent;
 use App\Models\Conversation;
 use App\Models\Messages;
@@ -152,6 +153,7 @@ class ApiController extends Controller
         $messages = $conversation->message()->with('sender:id,name')->orderBy('created_at', 'asc')->get()->map(function ($msg) {
             return [
                 'id' => $msg->id,
+                'conversation_id' => $msg->conversation_id,
                 'sender_id' => $msg->sender_id,
                 'sender_name' => $msg->sender?->name,
                 'ciphertext' => $msg->ciphertext,
@@ -170,5 +172,24 @@ class ApiController extends Controller
         Messages::where('conversation_id', $conversationId)->where('sender_id', '!=', $userId)->whereNull('read_at')->update(['read_at' => now()]);
 
         return response()->json(['status' => 'success']);
+    }
+
+    public function editMessage(Request $request) {
+        $request->validate([
+            'id' => 'required|integer',
+            'ciphertext' => 'required|string',
+            'iv' => 'required|string',
+        ]);
+
+        $message = Messages::find($request->id);
+        
+        $message->update([
+            'ciphertext' => $request->ciphertext,
+            'iv' => $request->iv,
+        ]);
+
+        broadcast(new MessageEdited($message))->toOthers();
+
+        return back();
     }
 }
