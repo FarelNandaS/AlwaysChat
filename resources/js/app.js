@@ -7,8 +7,13 @@ import { createApp, h } from 'vue';
 import { ZiggyVue } from '../../vendor/tightenco/ziggy';
 
 const applyInitialThame = () => {
-    const savedThame = localStorage.getItem('thame') || 'light';
-    const isDark = savedThame === 'dark' || (savedThame === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    const savedTheme = localStorage.getItem('theme');
+
+    if (!savedTheme) {
+        localStorage.setItem('theme', 'system');
+    }
+
+    const isDark = savedTheme === 'dark' || window.matchMedia('(prefers-color-scheme: dark)').matches;
 
     if (isDark) {
         document.documentElement.classList.add('dark');

@@ -5,7 +5,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import { alert } from '@/Components/Alert.vue';
 
-const selectedTheme = ref('light');
+const currentTheme = ref('system');
 
 const themes = [
     {
@@ -29,20 +29,20 @@ const themes = [
 ];
 
 onMounted(() => {
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    selectedTheme.value = savedTheme;
+    const savedTheme = localStorage.getItem('thame');
+    currentTheme.value = savedTheme;
 });
 
-const saveSettings = () => {
-    localStorage.setItem('theme', selectedTheme.value);
+const saveTheme = (theme) => {
+    localStorage.setItem('thame', theme);
 
-    if (selectedTheme.value === 'dark' || (selectedTheme.value === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    if (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
         document.documentElement.classList.add('dark');
     } else {
         document.documentElement.classList.remove('dark');
     }
 
-    alert.success('Berhasil!', 'Pengaturan tema telah diperbarui.');
+    currentTheme.value = theme;
 };
 </script>
 
@@ -89,15 +89,15 @@ const saveSettings = () => {
                             <div
                                 v-for="theme in themes"
                                 :key="theme.id"
-                                @click="selectedTheme = theme.id"
+                                @click="saveTheme(theme.id)"
                                 class="relative flex items-center p-4 border rounded-xl cursor-pointer transition-all duration-150"
-                                :class="selectedTheme === theme.id 
+                                :class="currentTheme === theme.id 
                                     ? 'border-indigo-600 bg-indigo-50/40 dark:bg-indigo-950/30 ring-1 ring-indigo-600 dark:ring-indigo-500' 
                                     : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-50/50 dark:hover:bg-slate-800/40'"
                             >
                                 <div 
                                     class="p-2.5 rounded-lg mr-4 transition-colors"
-                                    :class="selectedTheme === theme.id 
+                                    :class="currentTheme === theme.id 
                                         ? 'bg-indigo-600 text-white' 
                                         : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'"
                                 >
@@ -118,23 +118,14 @@ const saveSettings = () => {
                                 <div class="flex items-center">
                                     <div 
                                         class="w-4 h-4 rounded-full border flex items-center justify-center transition-colors"
-                                        :class="selectedTheme === theme.id 
+                                        :class="currentTheme === theme.id 
                                             ? 'border-indigo-600 bg-indigo-600 dark:border-indigo-500 dark:bg-indigo-500' 
                                             : 'border-slate-300 dark:border-slate-600'"
                                     >
-                                        <div v-if="selectedTheme === theme.id" class="w-1.5 h-1.5 rounded-full bg-white"></div>
+                                        <div v-if="currentTheme === theme.id" class="w-1.5 h-1.5 rounded-full bg-white"></div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-
-                        <div class="mt-6 flex items-center gap-4">
-                            <PrimaryButton 
-                                @click="saveSettings"
-                                class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 active:bg-indigo-800 text-xs font-semibold rounded-lg shadow-sm transition-colors"
-                            >
-                                Simpan Perubahan
-                            </PrimaryButton>
                         </div>
                     </section>
                 </div>
