@@ -185,9 +185,11 @@ onMounted(() => {
                             const plaintextLastMsg = await decryptMessage(chats.value[conversationIndex].public_key, lastMsg.ciphertext, lastMsg.iv);
                             
                             chats.value[conversationIndex].lastMsg = plaintextLastMsg;
+                            chats.value[conversationIndex].has_unread = false;
                         } catch (error) {
                             console.error('Gagal decrypt pesan terakhir dari pesan orang lain di pecakapan lain:', error);
                             chats.value[conversationIndex].lastMsg = '[Pesan Terencrypted]';
+                            chats.value[conversationIndex].has_unread = false;
                         }
                     } else {
                         chats.value[conversationIndex].lastMsg = 'Belum Ada Pesan';
