@@ -31,9 +31,10 @@ Route::prefix('api')->middleware(['api', 'auth', 'throttle:60,1'])->group(functi
     Route::get('/user/public_key', [ApiController::class, 'getPublicKey'])->name('api.user.public-key');
 
     Route::post('/add-conversation', [ApiController::class, 'addConversation'])->name('api.add-conversation');
-    Route::post('/send-message', [ApiController::class, 'sendMessage'])->name('api.send-message');
     Route::post('/conversation/{conversation}/read', [ApiController::class, 'markAsRead'])->name('api.mark-as-read');
+    Route::post('/send-message', [ApiController::class, 'sendMessage'])->name('api.send-message');
     Route::post('/message/edit', [ApiController::class, 'editMessage'])->name('api.edit-message');
+    Route::delete('/message/detele', [ApiController::class, 'deleteMessage'])->name('api.delete-message');
 
     Route::get('/conversations/{conversation}/messages', [ApiController::class, 'getMessages'])->name('api.getMessages');
 });

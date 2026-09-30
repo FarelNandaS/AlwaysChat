@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\MessageDeleted;
 use App\Events\MessageEdited;
 use App\Events\MessageSent;
 use App\Models\Conversation;
@@ -189,6 +190,23 @@ class ApiController extends Controller
         ]);
 
         broadcast(new MessageEdited($message))->toOthers();
+
+        return back();
+    }
+
+    public function deleteMessage(Request $request) {
+        $request->validate([
+            'id'=>'required|integer',
+        ]);
+
+        $message = Messages::find($request->id);
+
+        $messageId = $message->id;
+        $conversationId = $message->conversation_id;
+
+        $message->delete();
+
+        broadcast(new MessageDeleted($messageId, $conversationId));
 
         return back();
     }

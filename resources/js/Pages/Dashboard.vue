@@ -21,9 +21,6 @@ const props = defineProps({
     }
 });
 
-const isAddModalOpen = ref(false);
-const isEditMessageModalOpen = ref(false);
-
 const AddForm = useForm({
     email: '',
     chat: '',
@@ -36,6 +33,10 @@ const EditForm = useForm({
     id: null,
     ciphertext: '',
     iv: '',
+});
+
+const DeleteForm = useForm({
+    id: null,
 });
 
 const page = usePage();
@@ -53,6 +54,9 @@ const onlineUserId = ref([]);
 const newMessageText = ref('');
 const searchChat = ref('');
 
+const isAddModalOpen = ref(false);
+const isEditMessageModalOpen = ref(false);
+const isDeleteMessageModalOpen = ref(false);
 const isLoadingMessages = ref(false);
 const isFetchingKey = ref(false);
 const isSendingMessage = ref(false);
@@ -141,7 +145,7 @@ onMounted(() => {
             } else if (convData) {
                 try {
                     const plaintext = await decryptMessage(convData.public_key, newMsg.ciphertext, newMsg.iv);
-                    
+
                     chats.value.unshift({
                         ...convData,
                         lastMsg: plaintext,
@@ -247,7 +251,7 @@ const handleAddChat = async () => {
                 newConv.lastMsg = rawPlainText;
 
                 const existingIndex = chats.value.findIndex(c => c.id === newConv.id);
-                if (existingIndex) {
+                if (existingIndex !== -1) {
                     chats.value.splice(existingIndex, 1);
                 }
 
@@ -282,7 +286,7 @@ const handleEditMessage = async () => {
     const existingChat = chats.value.find(c => c.id === selectedMessage.value.conversation_id);
 
     try {
-        const {ciphertext, iv} = await encryptMessage(existingChat.public_key, rawPlainText);
+        const { ciphertext, iv } = await encryptMessage(existingChat.public_key, rawPlainText);
         EditForm.ciphertext = ciphertext;
         EditForm.iv = iv;
     } catch (error) {
@@ -296,11 +300,44 @@ const handleEditMessage = async () => {
         onSuccess: () => {
             const messageIndex = messages.value.findIndex(m => m.id === selectedMessage.value.id);
 
-            if (messageIndex) {
+            if (messageIndex !== -1) {
                 messages.value[messageIndex].plaintext = rawPlainText;
             }
 
             closeEditMessageModal();
+        }
+    })
+}
+
+const openDeleteMessageModal = (msg) => {
+    selectedMessage.value = msg;
+    DeleteForm.id = msg.id;
+    isDeleteMessageModalOpen.value = true;
+}
+
+const closeDeleteMessageModal = () => {
+    selectedMessage.value = null;
+    DeleteForm.id = null;
+    isDeleteMessageModalOpen.value = false;
+}
+
+const handleDeleteMessage = async () => {
+    if (!DeleteForm.id) return;
+
+    DeleteForm.delete(route('api.delete-message'), {
+        preserveScroll: true,
+        onSuccess: () => {
+            const messageIndex = messages.value.findIndex(m => m.id === selectedMessage.value.id);
+
+            if (messageIndex !== -1) {
+                messages.value.splice(messageIndex, 1);
+            }
+
+            closeDeleteMessageModal();
+        },
+        onError: (error) => {
+            console.error('Gagal menghapus pesan:', error);
+            alert.error('Gagal menghapus pesan.');
         }
     })
 }
@@ -406,7 +443,7 @@ const selectChat = async (chat) => {
                 }
 
                 scrollToBottom();
-                updateAndReorderSidebar(chat.id, message.value[message.value.length - 1].plaintext, newMsg.created_at);
+                updateAndReorderSidebar(chat.id, messages.value[messages.value.length - 1].plaintext, newMsg.created_at);
             }
         })
         .listen('.message.edited', async (e) => {
@@ -429,6 +466,23 @@ const selectChat = async (chat) => {
                 } catch (error) {
                     console.error('Gagal encrypt pesan teredit:', error);
                 }
+            }
+        })
+        .listen('.message.deleted', (e) => {
+            const messageId = e.messageId;
+            const conversationId = e.conversationId;
+
+            const messageIndex = messages.value.findIndex(m => m.id === messageId);
+            if (messageIndex !== -1) {
+                messages.value.splice(messageIndex, 1);
+            }
+
+            const conversationIndex = chats.value.findIndex(c => c.id === conversationId);
+            if (messages.value.length > 0) {
+                const lastMsg = messages.value[messages.value.length - 1];
+                chats.value[conversationIndex].lastMsg = lastMsg.plaintext;
+            } else {
+                chats.value[conversationIndex].lastMsg = 'Belum Ada Pesan';
             }
         });
 
@@ -664,7 +718,7 @@ const logout = () => {
                                             Edit
                                         </button>
 
-                                        <button @click="openDeleteModal(msg)"
+                                        <button @click="openDeleteMessageModal(msg)"
                                             class="w-full px-4 py-2 text-start text-xs text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 focus:outline-none transition duration-150 ease-in-out flex items-center gap-2">
                                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor"
                                                 viewBox="0 0 24 24">
@@ -762,33 +816,86 @@ const logout = () => {
                     </form>
                 </div>
             </Modal>
-            
+
             <Modal :show="isEditMessageModalOpen" @close="closeEditMessageModal" max-width="md">
                 <div class="p-6 bg-white dark:bg-slate-900">
-                    <h2 class="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4">
-                        Edit Pesan
-                    </h2>
+                    <!-- Header Modal dengan Ikon -->
+                    <div class="flex items-center gap-3 text-indigo-600 dark:text-indigo-400 mb-4">
+                        <div class="p-2 bg-indigo-50 dark:bg-indigo-950/50 rounded-full">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                        </div>
+                        <h2 class="text-lg font-bold text-slate-900 dark:text-slate-100">
+                            Edit Pesan
+                        </h2>
+                    </div>
 
                     <form @submit.prevent="handleEditMessage">
-                        <div class="mt-2">
-                            <InputLabel for="message" value="Message*" class="dark:text-slate-300" />
+                        <div>
+                            <InputLabel for="edit_message" value="Pesan" class="dark:text-slate-300 font-medium" />
 
-                            <TextInput id="message" type="text"
-                                class="mt-1 block w-full dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700"
-                                v-model="EditForm.message" placeholder="Ketik Pesan..." required autofocus />
+                            <TextInput id="edit_message" type="text"
+                                class="mt-1.5 block w-full dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700/80 focus:border-indigo-500 focus:ring-indigo-500 rounded-xl"
+                                v-model="EditForm.message" placeholder="Ketik pesan baru..." required autofocus />
 
                             <InputError class="mt-2" :message="EditForm.errors.message" />
                         </div>
 
+                        <!-- Tombol Aksi -->
                         <div class="mt-6 flex justify-end gap-3">
-                            <SecondaryButton @click="closeEditMessageModal">
+                            <SecondaryButton @click="closeEditMessageModal" type="button" class="rounded-xl">
                                 Batal
                             </SecondaryButton>
 
-                            <PrimaryButton :disabled="EditForm.processing">
+                            <PrimaryButton :disabled="EditForm.processing"
+                                class="rounded-xl bg-indigo-600 hover:bg-indigo-700">
                                 <span v-if="EditForm.processing">Memproses...</span>
-                                <span v-else>Edit</span>
+                                <span v-else>Simpan Perubahan</span>
                             </PrimaryButton>
+                        </div>
+                    </form>
+                </div>
+            </Modal>
+
+            <Modal :show="isDeleteMessageModalOpen" @close="closeDeleteMessageModal" max-width="md">
+                <div class="p-6 bg-white dark:bg-slate-900">
+                    <div class="flex items-center gap-3 text-red-600 dark:text-red-400 mb-4">
+                        <div class="p-2 bg-red-100 dark:bg-red-950/50 rounded-full">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                        </div>
+                        <h2 class="text-lg font-bold text-slate-900 dark:text-slate-100">
+                            Hapus Pesan
+                        </h2>
+                    </div>
+
+                    <p class="text-sm text-slate-600 dark:text-slate-400 mb-4">
+                        Apakah Anda yakin ingin menghapus pesan ini? Tindakan ini tidak dapat dibatalkan.
+                    </p>
+
+                    <div v-if="selectedMessage"
+                        class="p-3 bg-slate-100 dark:bg-slate-800 rounded-xl mb-6 border border-slate-200 dark:border-slate-700/60">
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mb-1">Pesan:</p>
+                        <p class="text-sm text-slate-800 dark:text-slate-200 italic break-words">
+                            "{{ selectedMessage.plaintext || selectedMessage.ciphertext }}"
+                        </p>
+                    </div>
+
+                    <form @submit.prevent="handleDeleteMessage">
+                        <div class="flex justify-end gap-3">
+                            <SecondaryButton @click="closeDeleteMessageModal" type="button">
+                                Batal
+                            </SecondaryButton>
+
+                            <button type="submit" :disabled="DeleteForm.processing"
+                                class="inline-flex items-center px-4 py-2 bg-red-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-500 active:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 transition ease-in-out duration-150 disabled:opacity-50">
+                                <span v-if="DeleteForm.processing">Memproses...</span>
+                                <span v-else>Ya, Hapus</span>
+                            </button>
                         </div>
                     </form>
                 </div>
