@@ -22,7 +22,8 @@ cd AlwaysChat
 #lakukan setup
 composer run setup
 
-#configure .env agar cocok dengan keperluan anda
+#configure .env
+CEK FILE .env LALU ATUR AGAR SESUAI DENGAN KEBUTUHAN ANDA
 
 #jalankan project
 composer run dev
