@@ -17,10 +17,14 @@ class MessageEdited implements ShouldBroadcastNow
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public $message;
+    public $receiverId;
+    public $isLastMsg;
 
-    public function __construct(Messages $message)
+    public function __construct(Messages $message, $receiverId, $isLastMsg)
     {
         $this->message = $message;
+        $this->receiverId = $receiverId;
+        $this->isLastMsg = $isLastMsg;
     }
 
     /**
@@ -32,6 +36,7 @@ class MessageEdited implements ShouldBroadcastNow
     {
         return [
             new PrivateChannel('chat.' . $this->message->conversation_id),
+            new PrivateChannel('user.' . $this->receiverId),
         ];
     }
 
@@ -44,6 +49,7 @@ class MessageEdited implements ShouldBroadcastNow
     {
         return [
             'message' => $this->message,
+            'isLastMsg' => $this->isLastMsg,
         ];
     }
 }

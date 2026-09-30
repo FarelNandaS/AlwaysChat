@@ -17,11 +17,17 @@ class MessageDeleted implements ShouldBroadcastNow
 
     public $messageId;
     public $conversationId;
+    public $receiverId;
+    public $isLastMsg;
+    public $lastMsg;
 
-    public function __construct($messageId, $conversationId)
+    public function __construct($messageId, $conversationId, $receiverId, $isLastMsg, $lastMsg)
     {
         $this->messageId = $messageId;
         $this->conversationId = $conversationId;
+        $this->receiverId = $receiverId;
+        $this->isLastMsg = $isLastMsg;
+        $this->lastMsg = $lastMsg;
     }
 
     /**
@@ -33,6 +39,7 @@ class MessageDeleted implements ShouldBroadcastNow
     {
         return [
             new PrivateChannel('chat.' . $this->conversationId),
+            new PrivateChannel('user.' . $this->receiverId),
         ];
     }
 
@@ -46,6 +53,8 @@ class MessageDeleted implements ShouldBroadcastNow
         return [
             'messageId' => $this->messageId,
             'conversationId' => $this->conversationId,
+            'isLastMsg' => $this->isLastMsg,
+            'lastMsg' => $this->lastMsg,
         ];
     }
 }

@@ -189,7 +189,12 @@ class ApiController extends Controller
             'iv' => $request->iv,
         ]);
 
-        broadcast(new MessageEdited($message))->toOthers();
+        $conversation = Conversation::find($message->conversation_id);
+
+        $receiver = $conversation->users->where('id', '!=', Auth::user()->id)->first();
+        $isLastMsg = $message->id === $conversation->latestMessage->id;
+
+        broadcast(new MessageEdited($message, $receiver->id, $isLastMsg))->toOthers();
 
         return back();
     }
@@ -204,9 +209,16 @@ class ApiController extends Controller
         $messageId = $message->id;
         $conversationId = $message->conversation_id;
 
+        $conversation = Conversation::find($conversationId);
+        $receiver  = $conversation->users->where('id', '!=', Auth::user()->id)->first();
+        $currentLastMsg = $conversation->latestMessage;
+        $isLastMsg = $message->id === $currentLastMsg->id;
+
         $message->delete();
 
-        broadcast(new MessageDeleted($messageId, $conversationId));
+        $newLastMsg = $conversation->fresh()->latestMessage;
+        
+        broadcast(new MessageDeleted($messageId, $conversationId, $receiver->id, $isLastMsg, $newLastMsg))->toOthers();
 
         return back();
     }

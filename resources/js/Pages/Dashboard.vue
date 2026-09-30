@@ -125,37 +125,75 @@ const loadChat = async (conversation) => {
 
 onMounted(() => {
     if (window.Echo && currentUserId) {
-        window.Echo.private(`user.${currentUserId}`).listen('.message.sent', async (e) => {
-            const newMsg = e.message;
-            const convData = e.conversation;
+        window.Echo.private(`user.${currentUserId}`)
+            .listen('.message.sent', async (e) => {
+                const newMsg = e.message;
+                const convData = e.conversation;
 
-            const targetChat = chats.value.find(c => c.id === newMsg.conversation_id);
-            if (targetChat) {
-                try {
-                    const plaintext = await decryptMessage(targetChat.public_key, newMsg.ciphertext, newMsg.iv);
+                const targetChat = chats.value.find(c => c.id === newMsg.conversation_id);
+                if (targetChat) {
+                    try {
+                        const plaintext = await decryptMessage(targetChat.public_key, newMsg.ciphertext, newMsg.iv);
 
-                    updateAndReorderSidebar(newMsg.conversation_id, plaintext, newMsg.created_at);
+                        updateAndReorderSidebar(newMsg.conversation_id, plaintext, newMsg.created_at);
 
-                    if (!activeChat.value || activeChat.value.id !== newMsg.conversation_id) {
-                        targetChat.has_unread = true;
+                        if (!activeChat.value || activeChat.value.id !== newMsg.conversation_id) {
+                            targetChat.has_unread = true;
+                        }
+                    } catch (error) {
+                        console.error('Gagal decrypt pesan incoming global:', error);
                     }
-                } catch (error) {
-                    console.error('Gagal decrypt pesan incoming global:', error);
-                }
-            } else if (convData) {
-                try {
-                    const plaintext = await decryptMessage(convData.public_key, newMsg.ciphertext, newMsg.iv);
+                } else if (convData) {
+                    try {
+                        const plaintext = await decryptMessage(convData.public_key, newMsg.ciphertext, newMsg.iv);
 
-                    chats.value.unshift({
-                        ...convData,
-                        lastMsg: plaintext,
-                        online: onlineUserId.value.includes(convData.recipient_id),
-                    });
-                } catch (error) {
-                    console.error('Gagal decrypt pesan dari percakapan baru:', error);
+                        chats.value.unshift({
+                            ...convData,
+                            lastMsg: plaintext,
+                            online: onlineUserId.value.includes(convData.recipient_id),
+                        });
+                    } catch (error) {
+                        console.error('Gagal decrypt pesan dari percakapan baru:', error);
+                    }
                 }
-            }
-        });
+            })
+            .listen('.message.edited', async (e) => {
+                const updatedMsg = e.message;
+                const isLastMsg = e.isLastMsg;
+
+                const conversationIndex = chats.value.findIndex(c => c.id === updatedMsg.conversation_id);
+                if (isLastMsg) {
+                    try {
+                        const plaintextLastMsg = await decryptMessage(chats.value[conversationIndex].public_key, updatedMsg.ciphertext, updatedMsg.iv);
+
+                        chats.value[conversationIndex].lastMsg = plaintextLastMsg;
+                    } catch (error) {
+                        console.error('Gagal decrypt pesan teredit dari pecakapan lain:', error);
+                        chats.value[conversationIndex].lastMsg = '[Pesan Terencrypted]';
+                    }
+                }
+            })
+            .listen('.message.deleted', async (e) => {
+                const conversationId = e.conversationId;
+                const isLastMsg = e.isLastMsg;
+                const lastMsg = e.lastMsg;
+                console.log(e);
+                const conversationIndex = chats.value.findIndex(c => c.id === conversationId);
+                if (isLastMsg) {
+                    if (lastMsg) {
+                        try {
+                            const plaintextLastMsg = await decryptMessage(chats.value[conversationIndex].public_key, lastMsg.ciphertext, lastMsg.iv);
+                            
+                            chats.value[conversationIndex].lastMsg = plaintextLastMsg;
+                        } catch (error) {
+                            console.error('Gagal decrypt pesan terakhir dari pesan orang lain di pecakapan lain:', error);
+                            chats.value[conversationIndex].lastMsg = '[Pesan Terencrypted]';
+                        }
+                    } else {
+                        chats.value[conversationIndex].lastMsg = 'Belum Ada Pesan';
+                    }
+                }
+            });
 
         window.Echo.join('online').here((users) => {
             onlineUserId.value = users.map(u => u.id);
