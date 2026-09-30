@@ -19,33 +19,10 @@ git clone git@github.com:FarelNandaS/AlwaysChat.git
 #masuk directory
 cd AlwaysChat
 
-#install composer dependence
-composer i
+#lakukan setup
+composer run setup
 
-#install npm dependence
-npm i
+#configure .env agar cocok dengan keperluan anda
 
-#copy environment variable
-cp .env.example .env
-
-#generate key app
-php artisan key:generate
-
-#init reverb
-php artisan reverb:install
-
-#configure env
-CEK .env YANG SUDAH DI COPY LALU ATUR AGAR SESUAI DENGAN KEBUTUHAN ANDA
-
-#jalankan migrate dan seeder database
-php artisan migrate --seed
-
-#JALANKAN BEBERAPA COMMEND INI DI TERMINAL YANG BERBEDA
-#jalankan php server
-php artisan serve
-
-#jalankan npm
-npm run dev
-
-#jalankan reverb
-php artisan reverb:start
+#jalankan project
+composer run dev
